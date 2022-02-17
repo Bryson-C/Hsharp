@@ -1,45 +1,38 @@
-#include "lang_stream/lang_stream.h"
+
+#include <string>
+#include <vector>
+#include <ctype.h>
+
+std::string prgm =  "void main();"
+                    "int thing = 10;";
 
 
-
-class ttt {
-    private:
-        char plays[9] = {'.'};
-        bool m_hasWon = false;
-
-    public:
-        void printBoard() {
-            for (int i = 0; i < 9; i++) {
-                if (i%3 == 0) printf("\n");
-                printf("  %c  ", plays[i]);
-            }
+std::vector<std::string> getWords(std::string str) {
+    std::vector<std::string> words;
+    std::string buffer;
+    for (auto i : str) {
+        if (isalpha(i)) {
+            buffer += i;
         }
-        void play(int spot) {
-            if (plays[spot] == '.') {
-                plays[spot] = 'x';
-            }
+        if (isdigit(i)) {
+            words.emplace_back(buffer);
+            words.clear();
+            while (isdigit(i)) { buffer += i; }
         }
-        void reset() {
-            for (int i = 0; i < 9; i++) {
-                plays[i] == 0;
-            }
+        if (!isalnum(i)) {
+            words.emplace_back(i);
         }
-        bool hasWon() { return m_hasWon; }
-};
+    }
+    return words;
+}
 
 
 
 int main() {
 
+    for (auto i : getWords(prgm)) {
+        printf("%s\n", i.c_str());
+    }
 
-    std::string path = getLangFile("lang");
-    lstream file(path);
-    file.getProgram().getInfo();
-    file.printVariables();
-    
-    
 
-    
-
-    return 0;
 }
