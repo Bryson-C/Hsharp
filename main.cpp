@@ -66,12 +66,22 @@ struct Block {
 private:
 public:
     IRvec statement;
-    std::vector<IRvec> child;
+    uint32_t childCount = 0;
+    size_t childSize = 0;
+    Block* child = nullptr;
+
+
+    void allocate(size_t count)
+    {
+        child = new Block[count];
+        childSize = count;
+    }
+    void free() { delete[] child; }
 
     void print()
     {
         printf("Block:\n"); for (IR& ir : statement) printf("  | %s\n", ir.to_string().c_str());
-        if (!child.empty()) {
+        if (child != nullptr && childCount > 0) {
             printf("  Child:\n");
             for (IR& ir : statement) printf("    | %s\n", ir.to_string().c_str());
         }
@@ -81,17 +91,22 @@ public:
     {
         file << "Block:\n";
         for (IR& ir : statement) file << "  | " << ir.to_string() << "\n";
-        if (!child.empty()) {
-            for (std::vector<IR>& children : child)
+        if (childCount > 0 && child != nullptr) {
+            for (int cc = 0; cc < childCount; cc++)
             {
-                file << "  Child:\n";
-                for (IR& ir : children) file << "    | " << ir.to_string() << "\n";
+                if (!child[cc].statement.empty())
+                {
+                    file << "  Child:\n";
+                    for (int sc = 0; sc < child[cc].statement.size(); sc++)
+                        file << "    | " << child[cc].statement[sc].to_string() << "\n";
+                }
             }
         }
         file << "\n";
     }
 };
 
+// Keywords For The Language
 std::map<std::string, IR> InstructionTable {
         {"Int",  {IR::ID::VAR_TYPE, "Int"}},
         {"Void", {IR::ID::VAR_TYPE, "Void"}},
@@ -120,6 +135,14 @@ namespace CompilerWarnings {
     std::string InvalidVarCreation(std::string additionalInfo = "") {
         invalidVarCreationCalled++;
         std::string errCode = {"(Count: " + std::to_string(invalidVarCreationCalled) + ") " + " Invalid Creation Of A Variable"};
+        printf(errorFormat, errCode.c_str());
+        if (!additionalInfo.empty()) printf(":\n\t%s\n\n", additionalInfo.c_str()); else printf("\n\n");
+        return errCode;
+    }
+    static size_t invalidVarFormatCalled = 0;
+    std::string InvalidVarFormat(std::string additionalInfo = "") {
+        invalidVarFormatCalled++;
+        std::string errCode = {"(Count: " + std::to_string(invalidVarFormatCalled) + ") " + " Invalid Variable Format Found"};
         printf(errorFormat, errCode.c_str());
         if (!additionalInfo.empty()) printf(":\n\t%s\n\n", additionalInfo.c_str()); else printf("\n\n");
         return errCode;
@@ -154,6 +177,13 @@ IR AcquireInstructionFromTable(std::map<std::string, IR> table, std::string inde
 }
 
 
+bool StateCheck(std::vector<IR::ID> desiredFormat, Block& block) {
+    for (int i = 0; i < block.statement.size(); i++) {
+        if (desiredFormat[desiredFormat.size()-1-i] != block.statement[block.statement.size()-1-i].id) return false;
+    }
+    return true;
+}
+
 std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::WordBufferWithPos>& wordBuffer) {
     IRvec ir;
     for (auto& i : wordBuffer) { ir.push_back(AcquireInstructionFromTable(InstructionTable, i)); }
@@ -175,24 +205,29 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
             stmt.statement.push_back(ir[i]);
             WriteStatementCompliantToAlias(file, ir[i].data);
             i++;
+
             if (stmt.statement[stmt.statement.size()-1].id != IR::ID::CUSTOM_STRING)
                 CompilerWarnings::InvalidVarCreation("Name Appears To Be A Pre-Defined Keyword");
 
             // Required To End Variable Definition Or Initialize The Var
             // Also Where The Variable Is Check If It Is A Function
-            if (IR::ID id = ir[i].id; id != IR::ID::INITIALIZER && id != IR::ID::END_STATEMENT) {
-                if (id != IR::ID::OPEN_ARRAY)
-                    CompilerWarnings::InvalidVarCreation("Variable Requires An Initializer Or End Statement After A Variable Name");
+            if (IR currentIR = ir[i]; currentIR.id != IR::ID::INITIALIZER && currentIR.id != IR::ID::END_STATEMENT) {
 
                 // This Is A Function If An Array Is Found
-                if (id == IR::ID::OPEN_ARRAY) {
+                if (currentIR.id == IR::ID::OPEN_ARRAY) {
                     i++;
-                    IRvec parameters = HereTo<IRvec, IR>(ir, i, [](IR x) { return (x.id == IR::ID::CLOSE_ARRAY); });
-                    // Since A Parameter Definition Is Required To Have A Opening And Closing Symbol Push Both
-                    parameters.insert(parameters.begin(), AcquireInstructionFromTable(InstructionTable, "["));
-                    parameters.insert(parameters.end(), AcquireInstructionFromTable(InstructionTable, "]"));
+                    stmt.statement.push_back(currentIR);
+                    Block parameters;
+                    parameters.statement = HereTo<IRvec, IR>(ir, i, [](IR x) { return (x.id == IR::ID::CLOSE_ARRAY); });
+                    stmt.statement.push_back(ir[i]);
 
-                    for (auto& i : parameters) {
+                    stmt.allocate(10);
+                    stmt.child[stmt.childCount++] = parameters;
+                    // Since A Parameter Definition Is Required To Have A Opening And Closing Symbol Push Both
+                    parameters.statement.insert(parameters.statement.begin(), AcquireInstructionFromTable(InstructionTable, "["));
+                    parameters.statement.insert(parameters.statement.end(), AcquireInstructionFromTable(InstructionTable, "]"));
+
+                    for (auto& i : parameters.statement) {
                         switch (i.id) {
                             case IR::ID::OPEN_ARRAY: WriteStatement(file, "("); break;
                             case IR::ID::CLOSE_ARRAY: WriteStatement(file, ")"); break;
@@ -205,25 +240,51 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
                     i++;
                     if (ir[i].id == IR::ID::END_STATEMENT) WriteStatement(file,";\n");
                     else if (ir[i].id == IR::ID::OPEN_BRACKET) { WriteStatement(file, "{}\n"); CompilerWarnings::MissingFeature("Function Blocks Are Not Recorded; Hence They Will Not Be Written"); }
-                    stmt.child.push_back(parameters);
+
                 }
+                else CompilerWarnings::InvalidVarCreation("Variable Requires An Initializer Or End Statement After A Variable Name");
             }
-            // Variable Was Confirmed To Have A Safe Definition
-            else if (id == IR::ID::END_STATEMENT) {
+                // Variable Was Confirmed To Have A Safe Definition
+            else if (currentIR.id == IR::ID::END_STATEMENT) {
+                stmt.statement.push_back(currentIR);
+                if (!StateCheck({IR::ID::VAR_TYPE, IR::ID::CUSTOM_STRING, IR::ID::END_STATEMENT}, stmt)) CompilerWarnings::InvalidVarFormat("Variable Format Suspected To End, However, Doest Not Appear To Conform To The Format");
                 WriteStatementCompliantToAlias(file, ";\n");
                 statements.push_back(stmt);
                 continue;
             }
-            // Variable Was Confirmed To Have A Safe Initialization
-            else if (id == IR::ID::INITIALIZER) {
+                // Variable Was Confirmed To Have A Safe Initialization
+            else if (currentIR.id == IR::ID::INITIALIZER) {
+                stmt.statement.push_back(currentIR);
+                if (!StateCheck({IR::ID::VAR_TYPE, IR::ID::CUSTOM_STRING, IR::ID::INITIALIZER}, stmt)) CompilerWarnings::InvalidVarFormat("Variable ");
+
                 i++;
-                IRvec value = HereTo<IRvec, IR>(ir, i, [](IR x){ return (x.id == IR::ID::END_STATEMENT); });
-                if (value.size() > 1) WriteStatement(file, "[] = {");
+                Block values;
+                values.statement = HereTo<IRvec, IR>(ir, i, [](IR x){ return (x.id == IR::ID::END_STATEMENT); });
+
+                stmt.allocate(10);
+                stmt.child[stmt.childCount++] = values;
+
+                int commas = 0;
+                std::vector<std::string> digits;
+                for (auto& i : values.statement) {
+                    if (i.id == IR::ID::COMMA) commas++;
+                    else digits.push_back(i.data);
+                }
+
+                if (digits.size()>1) {
+                    WriteStatement(file, "[");
+                    WriteStatement(file, std::to_string(commas+1));
+                    WriteStatement(file, "]");
+                    WriteStatement(file, " = {");
+                }
                 else WriteStatement(file, "=");
 
-                for (IR& i : value) WriteStatement(file, i.data);
+                for (int loop = 0; std::string& i : digits) {
+                    WriteStatement(file, i + ((loop < digits.size()-1) ? "," : ""));
+                    loop++;
+                }
 
-                if (value.size() > 1) WriteStatement(file, "};\n");
+                if (digits.size() > 1) WriteStatement(file, "};\n");
                 else WriteStatement(file, ";\n");
             }
 
