@@ -37,7 +37,7 @@ Void sub [ Int a | Int b ] {}
  
 ```
 ### Block Visualization
-```Json
+```
 Block:
   | VAR_TYPE: 'Int'
   | CUSTOM_STRING: 'a'
