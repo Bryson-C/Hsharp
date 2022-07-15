@@ -25,6 +25,7 @@ Void add [ Int a | Int b ] {}
 Void sub [ Int a | Int b ];
 
 ```
+### Output
 ```C++
 #include <stdint.h>
  int64_t a = 10 ;
