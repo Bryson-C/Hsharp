@@ -124,6 +124,14 @@ namespace CompilerWarnings {
         if (!additionalInfo.empty()) printf(":\n\t%s\n\n", additionalInfo.c_str()); else printf("\n\n");
         return errCode;
     }
+    static size_t missingFeatureCalled = 0;
+    std::string MissingFeature(std::string additionalInfo = "") {
+        missingFeatureCalled++;
+        std::string errCode = {"(Count: " + std::to_string(missingFeatureCalled) + ") " + " Feature Has Yet To Be Implemented"};
+        printf(errorFormat, errCode.c_str());
+        if (!additionalInfo.empty()) printf(":\n\t%s\n\n", additionalInfo.c_str()); else printf("\n\n");
+        return errCode;
+    }
 };
 
 
@@ -194,6 +202,9 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
                             default: break;
                         }
                     }
+                    i++;
+                    if (ir[i].id == IR::ID::END_STATEMENT) WriteStatement(file,";\n");
+                    else if (ir[i].id == IR::ID::OPEN_BRACKET) { WriteStatement(file, "{}\n"); CompilerWarnings::MissingFeature("Function Blocks Are Not Recorded; Hence They Will Not Be Written"); }
                     stmt.child.push_back(parameters);
                 }
             }
@@ -223,6 +234,7 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
 
     return statements;
 }
+
 
 
 
