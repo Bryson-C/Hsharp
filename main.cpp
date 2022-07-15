@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <time.h> // To Record Time
 #include "CLL/FileReader/FileReader.h"
 #include "CLL/Generators/GeneratorStatements.h"
 
@@ -224,19 +225,6 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
 }
 
 
-
-template<class T>
-class vector {
-private:
-    T* data;            // actual data
-    uint32_t length;    // amount of valid data
-    uint32_t size;      // amount of space availible
-public:
-    vector(std::initializer_list<T> values);
-};
-
-#include <time.h> // To Record Time
-#include "CLL/Std/Math/Math.h"
 
 int main() {
 
