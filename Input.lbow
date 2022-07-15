@@ -1,0 +1,11 @@
+
+// Variable With Type `Int` And Value Of `10`
+Int a = 10;
+Int b = 10,20,30,40;
+Int c;
+
+String Str = "hello world";
+
+Void add [ Int a | Int b ] {}
+
+
