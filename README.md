@@ -10,3 +10,29 @@ Transpiled Language
   
 - Make Code Easier To Read
 - Document More Code
+
+### Input
+```C
+
+// Variable With Type `Int` And Value Of `10`
+Int a = 10;
+Int b = 10,20,30,40;
+Int c;
+
+String Str = "hello world";
+
+Void add [ Int a | Int b ] {}
+Void sub [ Int a | Int b ];
+
+```
+```C++
+#include <stdint.h>
+ int64_t a = 10 ;
+ int64_t b [] = { 10 , 20 , 30 , 40 };
+ int64_t c ;
+ const char* Str = "hello world" ;
+ void add ( int64_t a , int64_t b ) {}
+ void sub ( int64_t a , int64_t b ) ;
+ 
+```
+
