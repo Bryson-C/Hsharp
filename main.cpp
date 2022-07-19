@@ -27,6 +27,7 @@ struct IR {
         COMMENT,
         NEW_LINE,
         BLANK,
+        RETURN,
     };
     static std::string IDToString(IR::ID id) {
         switch(id) {
@@ -38,7 +39,7 @@ struct IR {
             case IR::ID::OPEN_BRACKET: return "OPEN_BRACKET"; break;
             case IR::ID::OPEN_PAREN: return "OPEN_PAREN"; break;
             case IR::ID::CLOSE_PAREN: return "CLOSE_PAREN"; break;
-            case IR::ID::CLOSE_BRACKET: return "OPEN_CLOSE"; break;
+            case IR::ID::CLOSE_BRACKET: return "CLOSE_BRACKET"; break;
             case IR::ID::OPEN_GENERIC: return "CLOSE_GENERIC"; break;
             case IR::ID::CLOSE_GENERIC: return "OPEN_GENERIC"; break;
             case IR::ID::END_STATEMENT: return "END_STATEMENT"; break;
@@ -48,6 +49,7 @@ struct IR {
             case IR::ID::COMMENT: return "COMMENT"; break;
             case IR::ID::NEW_LINE: return "NEW_LINE"; break;
             case IR::ID::BLANK: return "BLANK"; break;
+            case IR::ID::RETURN: return "RETURN"; break;
         }
     }
     IR::ID id;
@@ -111,6 +113,7 @@ std::map<std::string, IR> InstructionTable {
         {"Int",  {IR::ID::VAR_TYPE, "Int"}},
         {"Void", {IR::ID::VAR_TYPE, "Void"}},
         {"String", {IR::ID::VAR_TYPE, "String"}},
+        {"return",{IR::ID::RETURN, "return"}},
         {";", {IR::ID::END_STATEMENT, ";"}},
         {"=", {IR::ID::INITIALIZER, "="}},
         {",", {IR::ID::COMMA, ","}},
@@ -178,7 +181,7 @@ IR AcquireInstructionFromTable(std::map<std::string, IR> table, std::string inde
 
 
 bool StateCheck(std::vector<IR::ID> desiredFormat, Block& block) {
-    for (int i = 0; i < block.statement.size(); i++) {
+    for (int i = 0; i < desiredFormat.size(); i++) {
         if (desiredFormat[desiredFormat.size()-1-i] != block.statement[block.statement.size()-1-i].id) return false;
     }
     return true;
@@ -190,7 +193,7 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
 
     std::vector<Block> statements;
 
-    WriteStatementCompliantToAlias(file, "#include <stdint.h>\n");
+    WriteStatement(file, "#include <stdint.h>\n");
 
     for (int i = 0; i < ir.size(); i++) {
         if (ir[i].id == IR::ID::VAR_TYPE) {
@@ -213,8 +216,11 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
             // Also Where The Variable Is Check If It Is A Function
             if (IR currentIR = ir[i]; currentIR.id != IR::ID::INITIALIZER && currentIR.id != IR::ID::END_STATEMENT) {
 
+
                 // This Is A Function If An Array Is Found
                 if (currentIR.id == IR::ID::OPEN_ARRAY) {
+                    CompilerWarnings::MissingFeature("Functions Are Being Put On Hold!\n");
+
                     i++;
                     stmt.statement.push_back(currentIR);
                     Block parameters;
@@ -228,19 +234,32 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
                     parameters.statement.insert(parameters.statement.end(), AcquireInstructionFromTable(InstructionTable, "]"));
 
                     for (auto& i : parameters.statement) {
-                        switch (i.id) {
-                            case IR::ID::OPEN_ARRAY: WriteStatement(file, "("); break;
-                            case IR::ID::CLOSE_ARRAY: WriteStatement(file, ")"); break;
-                            case IR::ID::VAR_TYPE: WriteStatementCompliantToAlias(file, i.data); break;
-                            case IR::ID::CUSTOM_STRING:WriteStatement(file, i.data); break;
-                            case IR::ID::STRAIGHT_BRACKET: WriteStatement(file, ","); break;
-                            default: break;
-                        }
+                        if (i.id == IR::ID::OPEN_ARRAY) { WriteStatement(file, "("); continue; }
+                        else if (i.id == IR::ID::CLOSE_ARRAY) { WriteStatement(file, ")"); continue; }
+                        else if (i.id == IR::ID::STRAIGHT_BRACKET) { WriteStatement(file, ", "); continue; }
+                        WriteStatementCompliantToAlias(file, i.data);
                     }
                     i++;
-                    if (ir[i].id == IR::ID::END_STATEMENT) WriteStatement(file,";\n");
-                    else if (ir[i].id == IR::ID::OPEN_BRACKET) { WriteStatement(file, "{}\n"); CompilerWarnings::MissingFeature("Function Blocks Are Not Recorded; Hence They Will Not Be Written"); }
-
+                    if (ir[i].id == IR::ID::OPEN_BRACKET)
+                    {
+                        stmt.statement.push_back(ir[i]);
+                        int scope = 0;
+                        while (scope > 0) {
+                            if (ir[i].id == IR::ID::OPEN_BRACKET) scope++;
+                            else if (ir[i].id == IR::ID::CLOSE_BRACKET) scope--;
+                            i++;
+                        }
+                        stmt.statement.push_back(ir[i]);
+                        WriteStatement(file, " {}\n");
+                        i++;
+                    }
+                    else if (ir[i].id == IR::ID::END_STATEMENT)
+                    {
+                        stmt.statement.push_back(ir[i]);
+                        WriteStatement(file, ";\n");
+                        i++;
+                    }
+                    continue;
                 }
                 else CompilerWarnings::InvalidVarCreation("Variable Requires An Initializer Or End Statement After A Variable Name");
             }
@@ -256,7 +275,6 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
             else if (currentIR.id == IR::ID::INITIALIZER) {
                 stmt.statement.push_back(currentIR);
                 if (!StateCheck({IR::ID::VAR_TYPE, IR::ID::CUSTOM_STRING, IR::ID::INITIALIZER}, stmt)) CompilerWarnings::InvalidVarFormat("Variable ");
-
                 i++;
                 Block values;
                 values.statement = HereTo<IRvec, IR>(ir, i, [](IR x){ return (x.id == IR::ID::END_STATEMENT); });
@@ -277,10 +295,10 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
                     WriteStatement(file, "]");
                     WriteStatement(file, " = {");
                 }
-                else WriteStatement(file, "=");
+                else WriteStatement(file, " = ");
 
                 for (int loop = 0; std::string& i : digits) {
-                    WriteStatement(file, i + ((loop < digits.size()-1) ? "," : ""));
+                    WriteStatement(file, i + ((loop < digits.size()-1) ? ", " : ""));
                     loop++;
                 }
 
@@ -296,22 +314,155 @@ std::vector<Block> InstructionPass(std::ofstream& file, std::vector<FileReader::
     return statements;
 }
 
+void CommentCheck(std::ofstream& file, std::vector<FileReader::WordBufferWithPos>& wordBuffer, int& index) {
+    if (wordBuffer[index].str == "//")
+    {
+        // Unused Variable
+        std::string comment;
+        size_t curLine = wordBuffer[index].line;
+        while (wordBuffer[index].line == curLine && index < wordBuffer.size()) { printf("%s\n",(comment += wordBuffer[index].str).c_str()); index++; }
+    }
+}
+
+struct variable {
+    std::string type, name;
+    std::vector<std::string> value;
+};
+
+struct compilationVarData {
+    uint32_t index = 0;
+    std::map<std::string, variable> variableMap;
+    void insert(std::string varName, std::vector<std::string> value, std::string type = "")
+    {
+        variable var = {.type = type, .name = varName, .value = value};
+        this->variableMap.emplace(varName, var);
+    }
+};
+compilationVarData varData;
+
+void VariableCheck(std::ofstream& outfile, std::vector<FileReader::WordBufferWithPos>& wordBuffer, int& index) {
+    if (wordBuffer[index].str == "Int" || wordBuffer[index].str == "String" || wordBuffer[index].str == "Void")
+    {
+        // Type Write
+        std::string name, type = wordBuffer[index];
+        WriteStatementCompliantToAlias(outfile, wordBuffer[index++].str);
+        // Name Write
+        name = wordBuffer[index];
+        WriteStatement(outfile, wordBuffer[index++].str);
+        // Check If Variable Has Value;
+        if (wordBuffer[index].str == ";")
+        {
+            WriteStatement(outfile, ";\n");
+            varData.insert(name, {}, type);
+            return;
+        }
+        // Check If Variable Is Defined
+        else if (wordBuffer[index].str == "=")
+        {
+            index++;
+            int variableElemSize = 1;
+            std::vector<std::string> values;
+            std::string buffer;
+            while (wordBuffer[index].str != ";" && index < wordBuffer.size()) {
+                if (wordBuffer[index].str == ",")
+                {
+                    variableElemSize++;
+                    values.push_back(buffer);
+                    buffer.clear();
+                }
+                //else if (wordBuffer[index].str == "+") { index++; continue; }
+                else if (wordBuffer[index].str == "{" || wordBuffer[index].str == "}") { index++; continue; }
+                else
+                {
+                    if (varData.variableMap.contains(wordBuffer[index].str)) {
+                        auto variableData = varData.variableMap[wordBuffer[index].str];
+                        if (!variableData.value.empty())
+                        {
+                            if (variableData.type == "Int" || variableData.type.empty())
+                            {
+                                int loop = 0;
+                                for (auto &i: variableData.value)
+                                {
+                                    buffer += i + ((loop < variableData.value.size() - 1) ? ", " : "");
+                                    loop++;
+                                }
+                                if (loop > 1)
+                                    buffer = "{" + buffer + "}";
+                                variableElemSize += loop - 1;
+                            } else if (variableData.type == "String")
+                            {
+                                int loop = 0;
+                                std::string strBuffer;
+                                for (auto& i : variableData.value)
+                                {
+                                    for (auto& chr : i) {
+                                        if (chr == '\"') continue;
+                                        else
+                                            strBuffer += chr;
+                                    }
+                                    strBuffer += " ";
+                                }
+                                buffer = '\"' + strBuffer + '\"';
+                            }
+                        }
+                    }
+                    else
+                        buffer += wordBuffer[index].str + " ";
+                }
+                index++;
+            }
+            if (!buffer.empty())
+            {
+                values.push_back(buffer);
+                buffer.clear();
+            }
+
+            std::string compactedValue;
+            int loop = 0;
+            for (auto &i: values) {
+                compactedValue += i + ((loop < values.size() - 1) ? "," : "");
+                loop++;
+            }
+            if (loop > 1)
+                compactedValue = '{' + compactedValue + "}";
+            varData.insert(name, values, type);
+            compactedValue += ";\n";
+
+            if (variableElemSize > 1)
+            {
+                WriteStatement(outfile, "[");
+                WriteStatement(outfile, std::to_string(variableElemSize));
+                WriteStatement(outfile, "] = ");
+            }
+            else
+            {
+                WriteStatement(outfile, " = ");
+            }
+
+            WriteStatement(outfile, compactedValue);
+        }
+    }
+}
+
 
 
 
 int main() {
-
     clock_t executionStart = clock();
 
+
+    // TODO: Generate Tree Graph
     std::ofstream outfile(R"(D:\Languages\CommonLanguageLibraries\out.cpp)", std::ios::trunc);
-    std::ofstream irfile(R"(D:\Languages\CommonLanguageLibraries\IR.lang)", std::ios::trunc);
     FileReader reader(R"(D:\Languages\CommonLanguageLibraries\data.lang)");
 
-    auto wordBuffer = reader.getWordBuffer();
-    auto Instructions = InstructionPass(outfile, wordBuffer);
+    std::vector<FileReader::WordBufferWithPos> wordBuffer = reader.getWordBuffer();
 
-    for (auto& i : Instructions)
-        i.writeToFile(irfile);
+
+    for (int i = 0; i < wordBuffer.size(); i++) {
+        CommentCheck(outfile, wordBuffer, i);
+        VariableCheck(outfile, wordBuffer, i);
+    }
+
 
     printf("Execution Time: %lims\n", (clock()-executionStart));
 }
