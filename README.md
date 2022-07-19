@@ -45,71 +45,12 @@ long long int b[4] = {10 ,20 ,30 ,40 };
 long long int c = 20 ;
 long long int d[4] = {10 , 20 , 30 , 40 };
 long long int e = 10 + 20 + 10 ;
-long long int arrayPlusInt[4] = {10 , 20 , 30 , 40 }+ 20 ;
+long long int arrayPlusInt[4] = {10 , 20 , 30 , 40 }+ 20 ; // <- Does Not Function Correctly (Needs To Append 20 To Array)
 const char* str = "Hello World" ;
 const char* hello = "Hello" ;
 const char* world = "World" ;
-const char* greeting = "World  ";
+const char* greeting = "World  "; // <- Does Not Function Correctly
 const char* combine[2] = {"Hello" ,"World" };
-
-```
-### Block Visualization
-```
-Block:
-  | VAR_TYPE: 'Int'
-  | CUSTOM_STRING: 'a'
-  | INITIALIZER: '='
-  Child:
-    | DIGIT: '10'
-
-Block:
-  | VAR_TYPE: 'Int'
-  | CUSTOM_STRING: 'b'
-  | INITIALIZER: '='
-  Child:
-    | DIGIT: '10'
-    | COMMA: ','
-    | DIGIT: '20'
-    | COMMA: ','
-    | DIGIT: '30'
-    | COMMA: ','
-    | DIGIT: '40'
-
-Block:
-  | VAR_TYPE: 'Int'
-  | CUSTOM_STRING: 'c'
-  | END_STATEMENT: ';'
-
-Block:
-  | VAR_TYPE: 'String'
-  | CUSTOM_STRING: 'Str'
-  | INITIALIZER: '='
-  Child:
-    | CUSTOM_STRING: '"hello world"'
-
-Block:
-  | VAR_TYPE: 'Void'
-  | CUSTOM_STRING: 'add'
-  | OPEN_ARRAY: '['
-  | CLOSE_ARRAY: ']'
-  Child:
-    | VAR_TYPE: 'Int'
-    | CUSTOM_STRING: 'a'
-    | STRAIGHT_BRACKET: '|'
-    | VAR_TYPE: 'Int'
-    | CUSTOM_STRING: 'b'
-
-Block:
-  | VAR_TYPE: 'Void'
-  | CUSTOM_STRING: 'sub'
-  | OPEN_ARRAY: '['
-  | CLOSE_ARRAY: ']'
-  Child:
-    | VAR_TYPE: 'Int'
-    | CUSTOM_STRING: 'a'
-    | STRAIGHT_BRACKET: '|'
-    | VAR_TYPE: 'Int'
-    | CUSTOM_STRING: 'b'
 
 ```
 
