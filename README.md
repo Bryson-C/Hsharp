@@ -14,26 +14,28 @@ Transpiled Language
 ### Input
 ```C
 
-// Variable With Type `Int` And Value Of `10`
+
 Int a = 10;
 Int b = 10,20,30,40;
-Int c;
+Int c = 20;
+Int d = b;
+Int e = a + c + a;
+// does not work
+// TODO: Append variable to array
+Int arrayPlusInt = b + c;
 
-String Str = "hello world";
 
-Void add [ Int a | Int b ] {}
-Void sub [ Int a | Int b ] {}
+// Tests Of String Variables And Generation
+String str = "Hello World";
+String hello = "Hello";
+String world = "World";
+// TODO: Create Larger String From 2 Strings
+String greeting = hello + world;
+String combine = "Hello","World";
 
-```
-### Output
-```C++
-#include <stdint.h>
- int64_t a = 10 ;
- int64_t b [ 4 ]  = { 10, 20, 30, 40 };
- int64_t c ;
- const char* Str = "hello world" ;
- void add ( int64_t a , int64_t b ) {}
- void sub ( int64_t a , int64_t b ) {}
+
+// TODO: Indexing
+// TODO: Functions
  
 ```
 ### Block Visualization
