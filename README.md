@@ -38,6 +38,21 @@ String combine = "Hello","World";
 // TODO: Functions
  
 ```
+### Output
+```C++
+long long int a = 10 ;
+long long int b[4] = {10 ,20 ,30 ,40 };
+long long int c = 20 ;
+long long int d[4] = {10 , 20 , 30 , 40 };
+long long int e = 10 + 20 + 10 ;
+long long int arrayPlusInt[4] = {10 , 20 , 30 , 40 }+ 20 ;
+const char* str = "Hello World" ;
+const char* hello = "Hello" ;
+const char* world = "World" ;
+const char* greeting = "World  ";
+const char* combine[2] = {"Hello" ,"World" };
+
+```
 ### Block Visualization
 ```
 Block:
