@@ -54,3 +54,21 @@ const char* combine[2] = {"Hello" ,"World" };
 
 ```
 
+## Macros
+
+
+### Macro
+```C++
+#Int [x = v] => int $ = $;
+```
+### Input
+```C++
+Int a = 10;
+Int b = 20;
+```
+### Output
+```C++
+int a = 10 ;
+int b = 20 ;
+```
+
