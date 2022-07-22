@@ -3,7 +3,7 @@
 #include <string>
 #include "ctype.h"
 
-#include "CLL/FileReader/FileReader.h"
+#include "FileReader/FileReader.h"
 
 struct CLL_StringBuffer {
     std::vector<std::string> content;
@@ -58,7 +58,7 @@ int main() {
 
     struct Macro {
         std::string activator;
-        std::string format;
+        std::vector<std::string> format;
         std::string args;
     };
 
@@ -74,7 +74,7 @@ int main() {
             i++;
             if (wordBuffer[i].str == "[") {
                 i++;
-                while (wordBuffer[i].str != "]") mc.args += wordBuffer[i].str;
+                while (wordBuffer[i].str != "]") mc.args += wordBuffer[i++].str;
                 i++;
             } else {
                 std::cerr << "Macro Requires Argument List After Activator\n";
@@ -83,29 +83,34 @@ int main() {
             if (wordBuffer[i].str == "=" && wordBuffer[i+1].str == ">") {
                 i+=2;
                 while (wordBuffer[i].str != ";") {
-                    mc.format += wordBuffer[i].str + " ";
+                    mc.format.push_back(wordBuffer[i++].str);
                 }
+                mc.format.push_back(";");
                 i++;
                 macros.push_back(mc);
             } else {
                 std::cerr << "Macro Expects That Following A Argument List The `=>` Operator Is Present\n";
             }
+        }
 
-            for (auto& mc : macros) {
-                if (wordBuffer[i].str == mc.activator) {
-                    std::string buffer;
-                    // Skip Activator
-                    i++;
-                    if (mc.format != "$") {
-                        buffer += mc.format;
+        for (auto& mc : macros) {
+            if (wordBuffer[i].str == mc.activator) {
+                printf("Activating Macro: %s\n", mc.activator.c_str());
+                std::string buffer;
+                // Skip Activator
+                i++;
+                for (int index = 0; index < mc.format.size(); index++) {
+                    // TODO: If A Macro Argument Is A Symbol, Make It Required To Be That Symbol
+                    // TODO: If A Macro Argument Is A _, Make It Be Ignored To The Compiler
+                    if (mc.format[index] == "$") {
+                        buffer += wordBuffer[i].str + " ";
                         i++;
                     } else {
-                        buffer += wordBuffer[i].str;
+                        buffer += mc.format[index] + " ";
                     }
-                    printf("Buffer: %s\n", buffer);
                 }
+                printf("Buffer: %s\n", buffer.c_str());
             }
-
         }
     }
 
