@@ -4,7 +4,6 @@
 #include <map>
 #include "ctype.h"
 
-// Does Require File Reader
 #include "FileReader/FileReader.h"
 
 struct CLL_StringBuffer {
@@ -12,6 +11,7 @@ struct CLL_StringBuffer {
     std::string buffer;
 
     void operator+=(char c) { buffer += c; }
+    void operator+=(std::string str) { buffer += str; }
     void push() { if (!buffer.empty()) { content.push_back(buffer); buffer.clear(); } }
     void push(std::string str) { if (!str.empty()) { content.push_back(str); } }
 };
@@ -108,9 +108,60 @@ int32_t parseExpression(int32_t left, int32_t right, std::string op) {
     }
 }
 
+std::string vectorToString(std::vector<std::string>& vec, std::string splitStr) {
+    std::string str;
+    for (auto& i : vec) str += i + splitStr;
+    return str;
+}
+
+
+
+#include <filesystem>
+
+class Parser {
+public:
+    enum class type {
+        IDENTIFIER,
+        STRING,
+        INTEGER,
+        INITIALIZER,
+        CONTAINER,
+        SYMBOL,
+        UNKNOWN,
+    };
+private:
+    std::string content;
+    std::vector<std::string> wordBuffer;
+    std::vector<std::pair<uint32_t, type>> typeBuffer;
+public:
+    // Basic Initialization Of The Private Variables
+    Parser() : wordBuffer({}), content("") {}
+    // Reads The Given Path, Corrects The Path To Be Absolute
+    Parser(const char* path) {
+        // Correct Path To Be Absolute
+        const char* correctedPath = std::filesystem::absolute(path).string().c_str();
+        // Read File And Split The Words
+        FileReader reader(correctedPath);
+        content = reader.getChars();
+        // Get The Words From The Word Buffer (Which Also Has The Line; Which Is Excluded)
+        for (auto& wrd : reader.getWordBuffer()) wordBuffer.push_back(wrd.str);
+
+        // TODO: Loop Through Word Buffer To Estimate The Type Of Data
+
+    }
+    // Checks The Previous And Next Words To Check Certain Parameters
+    bool expects() {}
+    //
+
+
+    std::vector<std::string> getWordBuffer() { return wordBuffer; }
+};
+
 
 
 int main() {
+
+    Parser parser("data.lang");
 
     FileReader reader("D:\\Languages\\CLL\\data.lang");
     auto wordBuffer = reader.getWordBuffer();
@@ -141,11 +192,14 @@ int main() {
             std::vector<std::string> varValues;
         };
         compileTimeResult getVariable(std::string name) {
-            if (varNames.contains(name)) {
-                std::cerr << "Tried Obtaining A Variable Which Does Not Appear To Exist\n";
+            if (!varNames.contains(name)) {
+                std::cerr << "Tried Obtaining A Variable Which Does Not Appear To Exist\n  Name: '" << name << "'\n  @: Unknown Location\n";
                 return {false, "", "", {}};
             }
             return { true, name, varTypes[varNames[name]], varValues[varNames[name]] };
+        }
+        bool hasVariable(std::string name) {
+            return varNames.contains(name);
         }
     };
 
@@ -194,51 +248,49 @@ int main() {
                 continue;
             }
             if (wordBuffer[i].str == "=") {
-                std::vector<std::string> values;
-                std::string strBuffer;
-                std::string buffer;
+                CLL_StringBuffer buffer;
+                i++;
                 while (wordBuffer[i].str != ";") {
-                    if (wordBuffer[i].str == "\"" && !strBuffer.empty()) {
-                        i++;
-                        values.push_back(strBuffer);
-                        strBuffer.clear();
-                        continue;
-                    }
-                    if (type == "Int" && isOperator(wordBuffer[i].str)) {
-                        // TODO: Figure Out If I Want 32 Bit Or 64 Bit Integers
-                        // std::stoll Should Count For 64 Bit For Future Use
-                        int64_t left = std::stoll(wordBuffer[i-1].str);
-                        int64_t right = std::stoll(wordBuffer[i+1].str);
-                        std::string op = wordBuffer[i].str;
-                        parseExpression(left, right, op);
-                        i++;
-                    } else if (type == "string" && isOperator(wordBuffer[i].str)) {
+                    if (type == "string" && isOperator(wordBuffer[i].str)) {
                         std::cerr << "String Operations Have Yet To Be Implemented\n  @: " << wordBuffer[i].line << "\n";
+                        break;
                     }
+
                     if (wordBuffer[i].str == ",") {
-                        values.push_back(wordBuffer[i].str);
+                        buffer.push();
                         i++;
                         continue;
                     }
+
+                    if (compileTime.hasVariable(wordBuffer[i].str)) {
+                        auto var = compileTime.getVariable(wordBuffer[i].str);
+                        if (var.type != type)
+                            std::cerr << "Variable Types Miss Match\n  Type Collision Between: " << name << "Of Type " << type <<  "And" << var.name << "Of Type " << var.type << "\n";
+                        buffer += "{";
+                        buffer += vectorToString(var.varValues, ", ");
+                        buffer += "}";
+                    }
+
+
                     buffer += wordBuffer[i].str;
                     i++;
                 }
-                if (!buffer.empty()) values.push_back(buffer);
-                compileTime.newVariable(name, type, values);
+                buffer.push();
+                compileTime.newVariable(name, type, buffer.content);
                 // We Are Done With This Variable
                 continue;
             }
 
         } else {
-            auto variable = compileTime.getVariable(wordBuffer[i]);
+            auto variable = compileTime.getVariable(wordBuffer[i].str);
             if (variable.hasVariable) {
-                std::cout << "Found Variable!\n";
+                std::cout << "Found Variable: " << variable.name << "\n";
                 i++;
                 if (wordBuffer[i].str == "?") {
-                    std::cout << "Variable Requested To Be Printed\n  |: ";
+                    std::cout << "Variable Requested To Be Printed\n";
                     if (!variable.varValues.empty()) {
                         for (auto &varval: variable.varValues)
-                            std::cout << varval << "\n  |  ";
+                            std::cout << "  |: " << varval << "\n";
                     }
                     else {
                         std::cerr << "Variable Has No Values Therefore Will Not Be Printed\n";
@@ -246,7 +298,7 @@ int main() {
                 }
 
             } else {
-                std::cerr << "Unknown Error\n  @: " << wordBuffer[i].line << "\n";
+                std::cerr << "Unknown Error\n  Data: '" << wordBuffer[i].str << "'\n  @: " << wordBuffer[i].line << "\n";
             }
         }
 
