@@ -48,6 +48,9 @@ std::vector<std::string> getKeywords(std::string string) {
     int strType = -1, lastType = -1;
     // TODO: String Support
     for (int i = 0; i < string.size(); i++) {
+        if (string[i] == '/' && string[i+1] == '/') {
+            while (string[i] != '\n') i++;
+        }
         if (string[i] == '\"') {
             i++;
             strBuffer = FromTo<std::string, char>(string, i, [](char c){return true;},[](char c){return c=='\"';});

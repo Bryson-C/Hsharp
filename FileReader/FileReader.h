@@ -9,7 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <concepts>
-#include "../FancyLogger/FancyLogger.h"
+
 
 std::vector<std::string> getKeywords(std::string string);
 std::string GetFileContents(std::ifstream& file);

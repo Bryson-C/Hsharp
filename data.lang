@@ -1,0 +1,26 @@
+
+
+
+Int hello = 10, 20;
+hello?;
+
+Int greeting = 20, 30, 40, 500;
+greeting?;
+
+
+Int h2 = hello;
+h2?;
+
+Int range = 1..10;
+Int range2 = range;
+range2?;
+
+
+Int basic = 10,50;
+Int basic2 = 2*2;
+basic?;
+basic2?;
+
+
+Int exp = 10**10;
+exp?;
