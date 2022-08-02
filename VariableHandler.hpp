@@ -14,6 +14,7 @@
 enum class CLL_EVariableTypes {
     String,
     Integer64,
+    Void,
 };
 inline CLL_EVariableTypes CLL_StringToVarType(std::string type) {
     std::string lower;
@@ -55,6 +56,16 @@ struct CLL_ValueResult {
     CLL_EVariableValueResult result;
     DataType data;
 };
+
+inline bool isDigit(std::string string) {
+    for (auto& i : string) if (!isdigit(i)) return false;
+    return true;
+}
+inline CLL_EVariableTypes CLL_InferType(std::string value) {
+    if (isDigit(value)) return CLL_EVariableTypes::Integer64;
+    else if (value.empty()) return CLL_EVariableTypes::Void;
+    return CLL_EVariableTypes::String;
+}
 
 struct CLL_ScopedVariables {
 private:
@@ -106,6 +117,7 @@ enum class CLL_EOperationResult {
     MissMatchedTypes,
     ArrayAgainstSingleValue,
     FaultyData,
+    Unknown,
 };
 template<typename DataType>
 struct CLL_OperationHandlerResult {

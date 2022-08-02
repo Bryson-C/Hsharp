@@ -20,7 +20,41 @@ CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& vari
     }
     return variable;
 }
-CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
+    // Defining Variable Information
+    CLL_EVariableTypes types[2] = { CLL_InferType(left[0]), CLL_InferType(right[0]) };
+    bool isArray = (left.size() > 1 && right.size() > 1);
+    bool isInt64 = (types[0] == CLL_EVariableTypes::Integer64 && types[1] == CLL_EVariableTypes::Integer64);
+    bool isString = (types[0] == CLL_EVariableTypes::String && types[1] == CLL_EVariableTypes::String);
+
+    bool operationDefined = false;
+    CLL_OperationHandlerResult<std::vector<int64_t>> (*function)(CLL_ScopedVariables&, std::vector<std::string>, std::vector<std::string>, std::string) = CLL_PreformStringOperation;
+
+
+    if (isInt64 && !isArray) {
+        CLL_StdOut("Inferring Operation Is Single Variable");
+        function = CLL_PreformOperation;
+        operationDefined = true;
+    }
+    else if (isInt64 && isArray) {
+        CLL_StdOut("Inferring Operation Is Array Variable");
+        function = CLL_PreformArrayOperation;
+        operationDefined = true;
+    }
+    else if (isString) {
+        CLL_StdOut("Inferring Operation Is String Variable");
+        function = CLL_PreformStringOperation;
+        operationDefined = true;
+    }
+
+    if (operationDefined)
+        return function(variables, left, right, op);
+
+    return {
+        .result = CLL_EOperationResult::Unknown,
+        .value = {},
+    };
+}
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
     CLL_EOperationResult opResult = CLL_EOperationResult::Success;
     if (left.empty() || right.empty()) opResult = CLL_EOperationResult::FaultyData;

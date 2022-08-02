@@ -66,10 +66,6 @@ bool isKeyword(std::string string) {
     else if (string == "=") return true;
     return false;
 }
-bool isDigit(std::string string) {
-    for (auto& i : string) if (!isdigit(i)) return false;
-    return true;
-}
 bool isOperator(std::string string) {
     if (string == "+") return true;
     if (string == "-") return true;
@@ -300,7 +296,7 @@ int main() {
 
                         std::string leftString = wordBuffer[i].str, rightSting = wordBuffer[i+2].str, OpString = wordBuffer[i+1].str;
 
-                        auto result = CLL_PreformOperation(compileTime, {leftString}, {rightSting}, OpString);
+                        auto result = CLL_PreformAutoOperation(compileTime, {leftString}, {rightSting}, OpString);
                         CLL_StdOut("Result Of Operation", {"Operation"}, {{leftString + " " + OpString + " " + rightSting}});
                         if (result.result != CLL_EOperationResult::Success) CLL_StdErr("Operation On Data Was Not Successful", {CLL_StdLabels::Cope}, {"Cannot Cope"});
                         for (auto& res : result.value) {
