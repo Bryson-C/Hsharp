@@ -125,6 +125,38 @@ struct CLL_OperationHandlerResult {
     DataType value;
 };
 
+template<typename DataType>
+struct CLL_ContainedData {
+private:
+    size_t childCount;
+public:
+    CLL_ContainedData() : childCount(0), data({}), children(nullptr) {
+        children = (DataType*)malloc(sizeof(DataType) * (childCount+=1));
+    }
+    std::vector<DataType> data;
+    DataType* children;
+};
+
+inline CLL_ContainedData<std::string> CLL_GetContainedData(std::string string) {
+    std::string containers = "{}()[]";
+    std::string opens, closes;
+    size_t iter = 0;
+    while (string[iter]) {
+        for (size_t i = 0; i < containers.size(); i++) {
+            if (string[iter] == containers[i]) {
+                printf("Found Container: %c\n", string[iter]);
+                if (i == 0 || i % 2 == 0) opens += containers[i];
+                else closes += containers[i];
+            }
+        }
+        iter++;
+    }
+    CLL_StdOut("OPENS:", {CLL_StdLabels::Data}, {opens});
+    CLL_StdOut("CLOSES:", {CLL_StdLabels::Data}, {closes});
+    return {};
+}
+
+
 // If The Value Passed Into `name` Parameter Is Present As A Variable In `variables` It Will Return The Variable, Otherwise It Will Return A Cope Value
 template<typename DataType>
 CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string));

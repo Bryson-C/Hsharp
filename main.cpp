@@ -181,7 +181,18 @@ public:
 
 int main() {
 
-    Parser parser("data.lang");
+    // EXP Start
+    //Parser parser("data.lang");
+
+    auto contained = CLL_GetContainedData("[{({})}]");
+    return 0;
+
+
+    // EXP End
+
+
+
+
 
     FileReader reader("D:\\Languages\\CLL\\data.lang");
     auto wordBuffer = reader.getWordBuffer();
