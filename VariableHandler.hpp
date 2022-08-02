@@ -44,9 +44,11 @@ struct CLL_Variable {
     CLL_EVariableTypes type;
     std::vector<std::string> data;
 };
+template<typename DataType>
 struct CLL_VariableResult {
     CLL_EVariableHandlerResult result;
     CLL_Variable variable;
+    DataType cope;
 };
 template<typename DataType>
 struct CLL_ValueResult {
@@ -61,20 +63,22 @@ public:
     std::map<std::string, uint32_t> varIndex;
     std::vector<CLL_Variable> vars;
 
-    inline CLL_VariableResult newScopedVariable(std::string name, CLL_EVariableTypes type, std::vector<std::string> data) {
+    inline CLL_VariableResult<std::string> newScopedVariable(std::string name, CLL_EVariableTypes type, std::vector<std::string> data) {
         size_t index = varCount++;
         varIndex.emplace(name, index);
         vars.push_back({name, type, data});
         return {
                 .result = CLL_EVariableHandlerResult::VariableCreationSuccess,
                 .variable = vars[index],
+                .cope = "",
         };
     };
-    inline CLL_VariableResult getScopedVarByName(std::string name) {
+    inline CLL_VariableResult<std::string> getScopedVarByName(std::string name) {
         bool variableExists = varIndex.contains(name);
         return {
                 .result = (variableExists) ? CLL_EVariableHandlerResult::VariablePresent : CLL_EVariableHandlerResult::VariableNonExistent,
                 .variable = vars[varIndex[name]],
+                .cope = "",
         };
     }
     inline bool findVariable(std::string name) {
@@ -109,10 +113,17 @@ struct CLL_OperationHandlerResult {
     DataType value;
 };
 
-
-
+// If The Value Passed Into `name` Parameter Is Present As A Variable In `variables` It Will Return The Variable, Otherwise It Will Return A Cope Value
+template<typename DataType>
+CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string));
+// Implicitly Find What Types The Variables Are And Pass The Values Into Another Function
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
+// Operations Preformed On Single Integers
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
-
+// Operations Preformed On Integer Arrays
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
+// Operations Preformed On Strings
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformStringOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
 
 
 

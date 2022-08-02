@@ -307,29 +307,6 @@ int main() {
                             buffer.push(std::to_string(res));
                             std::cout << "  |: " << res << "\n";
                         }
-                        /*
-                        bool leftIsVar = compileTime.hasVariable(wordBuffer[i].str);
-                        bool rightIsVar = compileTime.hasVariable(wordBuffer[i+2].str);
-
-                        std::vector<std::string> leftValues = (leftIsVar) ? compileTime.getVariable(wordBuffer[i].str).varValues : std::vector<std::string>{};
-                        std::vector<std::string> rightValues = (rightIsVar) ? compileTime.getVariable(wordBuffer[i].str).varValues : std::vector<std::string>{};
-
-                        int32_t left = (leftIsVar && !leftValues.empty()) ? std::stoi(leftValues[0]) : std::stoi(wordBuffer[i].str);
-                        if (leftIsVar && leftValues.size() > 1) std::cerr << "Attempting A Math Operation On An Array\n  Cope: Using The First Value Of The Array\n";
-
-                        int32_t right = (rightIsVar && !rightValues.empty()) ? std::stoi(rightValues[0]) : std::stoi(wordBuffer[i+2].str);
-                        if (rightIsVar && rightValues.size() > 1) std::cerr << "Attempting A Math Operation On An Array\n  Cope: Using The First Value Of The Array\n";
-
-
-                        std::string op = wordBuffer[i+1];
-                        std::vector<int32_t> result = parseExpression(left, right, op);
-                        CLL_StdOut("Result Of Operation", {"Operation"}, {{std::to_string(left) + " " + op + " " + std::to_string(right)}});
-                        //std::cout << "Result Of Operation\n  Operation: " << left << " " << op << " " << right << "\n";
-                        for (auto& res : result) {
-                            buffer.push(std::to_string(res));
-                            std::cout << "  |: " << res << "\n";
-                        }
-                        */
                         i+=3;
                         continue;
                     }

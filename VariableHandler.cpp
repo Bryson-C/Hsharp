@@ -6,9 +6,21 @@
 
 
 
-
-
-
+template<typename DataType>
+CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
+    CLL_VariableResult<DataType> variable;
+    if (variables.varIndex.contains(name)) {
+        variable.result = CLL_EVariableHandlerResult::VariablePresent;
+        variable.variable = variables.vars[variables.varIndex[name]];
+        variable.cope = {};
+    } else {
+        variable.result = CLL_EVariableHandlerResult::VariableNonExistent;
+        variable.variable = {};
+        variable.cope = cast(name);
+    }
+    return variable;
+}
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
     CLL_EOperationResult opResult = CLL_EOperationResult::Success;
     if (left.empty() || right.empty()) opResult = CLL_EOperationResult::FaultyData;
@@ -19,23 +31,19 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
 
     if (left.size() > 1 || right.size() > 1)  CLL_StdErr("Attempting To Use An Array In Operation", {CLL_StdLabels::Cope, CLL_StdLabels::Offender}, {"Using First Value In Array", {left[0] + ", ... Or " + right[0] + ", ..."}});
 
-    CLL_VariableResult leftVariable, rightVariable;
-    if (variables.findVariable(left[0])) {
-        leftVariable = variables.getScopedVarByName(left[0]);
+    //CLL_VariableResult<std::string> leftVariable, rightVariable;
+
+    auto leftVariable = CLL_GetVariableOptionally<int64_t>(variables, left[0], [](std::string name){ return std::stoll(name); });
+    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent)
         leftInt = std::stoll(leftVariable.variable.data[0]);
-        // We Dont Support Array Operations Yet So We Have To Give An Error
-        if (leftVariable.variable.data.size() > 1) CLL_StdErr("Attempting To Use An Array In Operation", {CLL_StdLabels::Cope, CLL_StdLabels::OffendingVariable}, {"Using First Value In Array", leftVariable.variable.name});
-    } else {
-        leftInt = std::stoll(left[0]);
-    }
-    if (variables.findVariable(right[0])) {
-        rightVariable = variables.getScopedVarByName(right[0]);
+    else
+        leftInt = leftVariable.cope;
+
+    auto rightVariable = CLL_GetVariableOptionally<int64_t>(variables, right[0], [](std::string name){ return std::stoll(name); });
+    if (rightVariable.result == CLL_EVariableHandlerResult::VariablePresent)
         rightInt = std::stoll(rightVariable.variable.data[0]);
-        // We Dont Support Array Operations Yet So We Have To Give An Error
-        if (rightVariable.variable.data.size() > 1) CLL_StdErr("Attempting To Use An Array In Operation", {CLL_StdLabels::Cope, CLL_StdLabels::OffendingVariable}, {"Using First Value In Array", rightVariable.variable.name});
-    } else {
-        rightInt = std::stoll(right[0]);
-    }
+    else
+        rightInt = rightVariable.cope;
 
     // Since We Dont Support String Operations We Need To Give An Error
     // Since We Cannot Support Miss Matched Types We Need To Give An Error
@@ -110,3 +118,5 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
             .value = integer,
     };
 }
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformStringOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
