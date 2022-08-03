@@ -12,6 +12,7 @@
 
 #include "CLL.hpp"
 enum class CLL_EVariableTypes {
+    None,
     String,
     Integer64,
     Void,
@@ -21,6 +22,7 @@ inline CLL_EVariableTypes CLL_StringToVarType(std::string type) {
     for (auto& chr : type) lower += std::tolower(chr);
     if (lower == "string") return CLL_EVariableTypes::String;
     else if (lower == "int") return CLL_EVariableTypes::Integer64;
+    return CLL_EVariableTypes::None;
 }
 inline std::string CLL_VarTypeToString(CLL_EVariableTypes type) {
     switch (type) {
@@ -49,6 +51,7 @@ template<typename DataType>
 struct CLL_VariableResult {
     CLL_EVariableHandlerResult result;
     CLL_Variable variable;
+    std::vector<DataType> indexedSlice;
     DataType cope;
 };
 template<typename DataType>
@@ -81,6 +84,7 @@ public:
         return {
                 .result = CLL_EVariableHandlerResult::VariableCreationSuccess,
                 .variable = vars[index],
+                .indexedSlice = {},
                 .cope = "",
         };
     };
@@ -89,6 +93,7 @@ public:
         return {
                 .result = (variableExists) ? CLL_EVariableHandlerResult::VariablePresent : CLL_EVariableHandlerResult::VariableNonExistent,
                 .variable = vars[varIndex[name]],
+                .indexedSlice = {},
                 .cope = "",
         };
     }
@@ -204,12 +209,16 @@ inline std::vector<std::string> CLL_AssembleArray(std::string string) {
 
     size_t iter = 0, opens = 0;
     while (string[iter]) {
+        bool found = false;
         for (size_t i = 0; i < containers.size(); i++) {
-            if (i < 2) opens++;
-            else opens--;
-
-            if (string[iter] == containers[i]) { iter++; break; }
+            if (string[iter] == containers[i]) {
+                found = true;
+                if (i < 2) opens++;
+                else opens--;
+                iter++;
+            }
             if (iter >= string.size()) goto EXIT_LABEL;
+            if (found) break;
         }
         if (string[iter] == ',') {
             content.push_back(buffer);
@@ -230,6 +239,10 @@ inline std::vector<std::string> CLL_AssembleArray(std::string string) {
 // If The Value Passed Into `name` Parameter Is Present As A Variable In `variables` It Will Return The Variable, Otherwise It Will Return A Cope Value
 template<typename DataType>
 CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string));
+CLL_VariableResult<std::string> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name);
+
+
+
 // Implicitly Find What Types The Variables Are And Pass The Values Into Another Function
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
 // Operations Preformed On Single Integers

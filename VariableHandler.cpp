@@ -9,17 +9,38 @@
 template<typename DataType>
 CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
     CLL_VariableResult<DataType> variable;
+
+    // TODO: This Code Block Is For Getting The Index From An Array
+    // TODO: Finish Doing This Code
+    for (size_t i = 0; i < name.size(); i++) {
+        if (name[i] == '[') {
+            std::string buffer;
+            i++;
+            while (name[i] != ']') {
+                buffer += name[i];
+                i++;
+            }
+            printf("Buffer: %s\n", buffer.c_str());
+        }
+    }
+
     if (variables.varIndex.contains(name)) {
         variable.result = CLL_EVariableHandlerResult::VariablePresent;
         variable.variable = variables.vars[variables.varIndex[name]];
+        variable.indexedSlice = {};
         variable.cope = {};
     } else {
         variable.result = CLL_EVariableHandlerResult::VariableNonExistent;
         variable.variable = {};
+        variable.indexedSlice = {};
         variable.cope = cast(name);
     }
     return variable;
 }
+CLL_VariableResult<std::string> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name) {
+    return CLL_GetVariableOptionally<std::string>(variables, name, [](std::string str){return str;});
+}
+
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
     CLL_EOperationResult result = CLL_EOperationResult::Unknown;
     // Check For Valid Data

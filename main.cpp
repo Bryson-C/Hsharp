@@ -183,7 +183,7 @@ int main() {
 
     // EXP Start
 
-    auto contained = CLL_AssembleArray("10,20,30");
+    auto contained = CLL_AssembleArray("{10,20,30}");
     for (auto& i : contained)
         std::cout << i << "\n";
 
@@ -317,7 +317,7 @@ int main() {
                         continue;
                     }
 
-                    if (compileTime.findVariable(wordBuffer[i].str)) {
+                    /*if (compileTime.findVariable(wordBuffer[i].str)) {
                         auto var = compileTime.getScopedVarByName(wordBuffer[i].str);
                         if (var.variable.type != type)
                             std::cerr << "Variable Types Miss Match\n  Type Collision Between: " << name << "Of Type " << CLL_VarTypeToString(type) <<  "And" << var.variable.name << "Of Type " << CLL_VarTypeToString(var.variable.type) << "\n";
@@ -326,6 +326,31 @@ int main() {
                         buffer += "}";
                         i++;
                         continue;
+                    }*/
+                    // TODO: This IF Statement Is For Getting Indices, I Still Need To Apply Single To Single Operations On Them
+                    if (wordBuffer[i].str == "[") {
+                        CLL_StringBuffer indexBuffer;
+                        i++;
+                        while (wordBuffer[i].str != "]") {
+                            indexBuffer.push(wordBuffer[i].str);
+                            i++;
+                        }
+                        i++;
+                        for (auto& index : indexBuffer.content)
+                            std::cout << "Buffer: " << index << "\n";
+                    }
+                    CLL_VariableResult<std::string> variable = CLL_GetVariableOptionally(compileTime, wordBuffer[i].str);
+                    if (variable.result == CLL_EVariableHandlerResult::VariablePresent) {
+                        if (variable.variable.type != type)
+                            CLL_StdOut("Variable Types Miss Match", {"Type Collision"},{{name + "Of Type " + CLL_VarTypeToString(type) + " And " + variable.variable.name + "Of Type " + CLL_VarTypeToString(variable.variable.type)}});
+
+                        buffer += "{";
+                        buffer += vectorToString(variable.variable.data, ", ");
+                        buffer += "}";
+                        i++;
+                        continue;
+                    } else {
+                        buffer += variable.cope;
                     }
 
 
