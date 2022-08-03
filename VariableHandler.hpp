@@ -117,6 +117,9 @@ enum class CLL_EOperationResult {
     MissMatchedTypes,
     ArrayAgainstSingleValue,
     FaultyData,
+    // This Means That The Ratio Of A Array Argument Is Just Not Possible To Operate On
+    // So If `Arg1` Has 12 Variables And `Arg2` Has 5, There Is No Foreseeable Way To Cope
+    InvalidArgumentRatio,
     Unknown,
 };
 template<typename DataType>
@@ -125,37 +128,104 @@ struct CLL_OperationHandlerResult {
     DataType value;
 };
 
+
 template<typename DataType>
 struct CLL_ContainedData {
 private:
-    size_t childCount;
-public:
-    CLL_ContainedData() : childCount(0), data({}), children(nullptr) {
-        children = (DataType*)malloc(sizeof(DataType) * (childCount+=1));
+    size_t count, allocSize;
+    uint32_t index;
+    void allocatorCheck() {
+        if (count >= allocSize) child = (CLL_ContainedData<DataType>*) realloc(child, sizeof(CLL_ContainedData<DataType>) * (allocSize *= 2));
     }
+public:
+    CLL_ContainedData(std::vector<DataType> value = {}, uint32_t index = 0) : count(0), allocSize(5), index(index) {
+        child = (CLL_ContainedData<DataType>*) malloc(sizeof(CLL_ContainedData<DataType>) * (allocSize));
+        if (!value.empty())
+            child[count] = value;
+    }
+
+    inline void addData(DataType value) { data.push_back(value); ++index; }
+    inline void addData(std::vector<DataType> value) { for (auto& i : value) data.push_back(i); ++index; }
+    inline void addNewArrayData(std::vector<DataType> value) {
+        allocatorCheck();
+        child[count++] = CLL_ContainedData<DataType>(value, ++index);
+    }
+
     std::vector<DataType> data;
-    DataType* children;
+    CLL_ContainedData<DataType>* child;
 };
 
 inline CLL_ContainedData<std::string> CLL_GetContainedData(std::string string) {
+    CLL_ContainedData<std::string> containedData;
     std::string containers = "{}()[]";
     std::string opens, closes;
+
+    std::vector<std::string> scopeData;
+    std::string buffer;
+    size_t scope = 0;
+
     size_t iter = 0;
     while (string[iter]) {
         for (size_t i = 0; i < containers.size(); i++) {
             if (string[iter] == containers[i]) {
-                printf("Found Container: %c\n", string[iter]);
                 if (i == 0 || i % 2 == 0) opens += containers[i];
                 else closes += containers[i];
+
+                if (iter >= string.size()-1) goto EXIT_LOOP_LABEL;
+                iter++;
+                break;
             }
         }
+        if (opens.size()-closes.size() != scope) {
+            containedData.addData(scopeData);
+        }
+        scope = opens.size()-closes.size();
+        if (string[iter] == ',') {
+            printf("Buffer: %s\n", buffer.c_str());
+            scopeData.push_back(buffer);
+            iter++;
+            continue;
+        }
+        buffer += string[iter];
         iter++;
     }
+    EXIT_LOOP_LABEL:
+    
     CLL_StdOut("OPENS:", {CLL_StdLabels::Data}, {opens});
     CLL_StdOut("CLOSES:", {CLL_StdLabels::Data}, {closes});
     return {};
 }
 
+// Turns A String Into A Array
+// For Example `[0,1,2,3,4]` Would Be Turned Into A Vector With 0, 1, 2, 3, And 4 As Elements
+inline std::vector<std::string> CLL_AssembleArray(std::string string) {
+    std::vector<std::string> content;
+    std::string containers = "{[()]}", buffer;
+
+    size_t iter = 0, opens = 0;
+    while (string[iter]) {
+        for (size_t i = 0; i < containers.size(); i++) {
+            if (i < 2) opens++;
+            else opens--;
+
+            if (string[iter] == containers[i]) { iter++; break; }
+            if (iter >= string.size()) goto EXIT_LABEL;
+        }
+        if (string[iter] == ',') {
+            content.push_back(buffer);
+            buffer.clear();
+            iter++;
+            continue;
+        }
+        buffer += string[iter];
+        iter++;
+    }
+    EXIT_LABEL:
+    if (opens > 0) CLL_StdErr("Function `CLL_AssembleArray` Only Supports Single Dimensional Arrays", {CLL_StdLabels::Offender, CLL_StdLabels::Cope, CLL_StdLabels::Data}, {"Offender: Argument 1", "Ignore", {"Scope = " + std::to_string(opens)}});
+    if (!buffer.empty()) content.push_back(buffer);
+
+    return content;
+}
 
 // If The Value Passed Into `name` Parameter Is Present As A Variable In `variables` It Will Return The Variable, Otherwise It Will Return A Cope Value
 template<typename DataType>

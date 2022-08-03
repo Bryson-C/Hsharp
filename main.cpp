@@ -182,11 +182,10 @@ public:
 int main() {
 
     // EXP Start
-    //Parser parser("data.lang");
 
-    auto contained = CLL_GetContainedData("[{({})}]");
-    return 0;
-
+    auto contained = CLL_AssembleArray("10,20,30");
+    for (auto& i : contained)
+        std::cout << i << "\n";
 
     // EXP End
 
@@ -350,7 +349,7 @@ int main() {
                             std::cout << "  |: " << varval << "\n";
                     }
                     else {
-                        CLL_StdErr("Variable Has No Values Therefore Will Not Be Printed",{CLL_StdLabels::Data}, {var.variable.name});
+                        CLL_StdErr("Variable Has No Values Therefore Will Not Be Printed",{CLL_StdLabels::OffendingVariable}, {var.variable.name});
                     }
                 }
             } else {

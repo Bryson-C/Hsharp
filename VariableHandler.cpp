@@ -21,6 +21,12 @@ CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& vari
     return variable;
 }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
+    CLL_EOperationResult result = CLL_EOperationResult::Unknown;
+    // Check For Valid Data
+    if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
+    else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1)) result = CLL_EOperationResult::ArrayAgainstSingleValue;
+    else if (left.size() != right.size()) result = CLL_EOperationResult::InvalidArgumentRatio;
+
     // Defining Variable Information
     CLL_EVariableTypes types[2] = { CLL_InferType(left[0]), CLL_InferType(right[0]) };
     bool isArray = (left.size() > 1 && right.size() > 1);
@@ -51,21 +57,17 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_Sc
         return function(variables, left, right, op);
 
     return {
-        .result = CLL_EOperationResult::Unknown,
+        .result = result,
         .value = {},
     };
 }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
-    CLL_EOperationResult opResult = CLL_EOperationResult::Success;
-    if (left.empty() || right.empty()) opResult = CLL_EOperationResult::FaultyData;
-    else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1)) opResult = CLL_EOperationResult::ArrayAgainstSingleValue;
-    else if (left.size() > 1 || right.size() > 1) CLL_StdErr("Array Operations Are Not Supported By This Function", {CLL_StdLabels::TODO}, {"Make Array Operations Work"});
-
+    CLL_EOperationResult result = CLL_EOperationResult::Success;
     int64_t leftInt, rightInt;
 
-    if (left.size() > 1 || right.size() > 1)  CLL_StdErr("Attempting To Use An Array In Operation", {CLL_StdLabels::Cope, CLL_StdLabels::Offender}, {"Using First Value In Array", {left[0] + ", ... Or " + right[0] + ", ..."}});
-
-    //CLL_VariableResult<std::string> leftVariable, rightVariable;
+    if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
+    else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1)) result = CLL_EOperationResult::ArrayAgainstSingleValue;
+    else if (left.size() > 1 || right.size() > 1)  CLL_StdErr("Attempting To Use An Array In Operation", {CLL_StdLabels::Cope, CLL_StdLabels::Offender}, {"Using First Value In Array", {left[0] + ", ... Or " + right[0] + ", ..."}});
 
     auto leftVariable = CLL_GetVariableOptionally<int64_t>(variables, left[0], [](std::string name){ return std::stoll(name); });
     if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent)
@@ -83,7 +85,7 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
     // Since We Cannot Support Miss Matched Types We Need To Give An Error
     if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent && rightVariable.result == CLL_EVariableHandlerResult::VariablePresent) {
         if (leftVariable.variable.type != rightVariable.variable.type) {
-            opResult = CLL_EOperationResult::MissMatchedTypes;
+            result = CLL_EOperationResult::MissMatchedTypes;
             CLL_StdErr("Trying To Preform An Operation On Miss Matched Types",{},{});
         }
         if (leftVariable.variable.type == CLL_EVariableTypes::String || rightVariable.variable.type == CLL_EVariableTypes::String) {
@@ -148,9 +150,17 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
     }
 
     return {
-            .result = opResult,
+            .result = result,
             .value = integer,
     };
 }
-CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
+CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
+    CLL_EOperationResult result = CLL_EOperationResult::Unknown;
+    if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
+    if (left.size() != right.size()) result = CLL_EOperationResult::InvalidArgumentRatio;
+
+
+
+    return {};
+}
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformStringOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }
