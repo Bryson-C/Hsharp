@@ -4,28 +4,10 @@
 
 #include "VariableHandler.hpp"
 
-template<typename DataType>
-CLL_VariableResult<DataType> CLL_GetVariableIndexOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
-
-}
 
 template<typename DataType>
-CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
+CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*copeCast)(std::string)) {
     CLL_VariableResult<DataType> variable;
-
-    // TODO: This Code Block Is For Getting The Index From An Array
-    // TODO: Finish Doing This Code
-    /*for (size_t i = 0; i < name.size(); i++) {
-        if (name[i] == '[') {
-            std::string buffer;
-            i++;
-            while (name[i] != ']') {
-                buffer += name[i];
-                i++;
-            }
-            printf("Buffer: %s\n", buffer.c_str());
-        }
-    }*/
 
     if (variables.varIndex.contains(name)) {
         variable.result = CLL_EVariableHandlerResult::VariablePresent;
@@ -36,7 +18,7 @@ CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& vari
         variable.result = CLL_EVariableHandlerResult::VariableNonExistent;
         variable.variable = {};
         variable.indexedSlice = {};
-        variable.cope = cast(name);
+        variable.cope = copeCast(name);
     }
     return variable;
 }
@@ -45,7 +27,7 @@ CLL_VariableResult<std::string> CLL_GetVariableOptionally(CLL_ScopedVariables& v
 }
 
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
-    CLL_EOperationResult result = CLL_EOperationResult::Unknown;
+    CLL_EOperationResult result = CLL_EOperationResult::Success;
     // Check For Valid Data
     if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
     else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1)) result = CLL_EOperationResult::ArrayAgainstSingleValue;
@@ -179,10 +161,40 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
     };
 }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
-    CLL_EOperationResult result = CLL_EOperationResult::Unknown;
+    CLL_EOperationResult result = CLL_EOperationResult::Success;
     if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
     if (left.size() != right.size()) result = CLL_EOperationResult::InvalidArgumentRatio;
+    if ((left.size() == 1 && right.size() > left.size()) || (right.size() == 1 && left.size() > right.size())) result = CLL_EOperationResult::ArrayAgainstSingleValue;
 
+    std::vector<int64_t> leftInt, rightInt;
+
+    // TODO: Fix This
+    /*
+    auto leftVariable = CLL_GetVariableOptionally<int64_t>(variables, left[0], [](std::string name){ return std::stoll(name); });
+    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent)
+        for (auto& val : leftVariable.variable.data)
+            leftInt.push_back(std::stoll(val));
+    else
+        leftInt.push_back(leftVariable.cope);
+
+    auto rightVariable = CLL_GetVariableOptionally<int64_t>(variables, right[0], [](std::string name){ return std::stoll(name); });
+    if (rightVariable.result == CLL_EVariableHandlerResult::VariablePresent)
+        rightInt = std::stoll(rightVariable.variable.data[0]);
+    else
+        rightInt = rightVariable.cope;
+
+    // Since We Dont Support String Operations We Need To Give An Error
+    // Since We Cannot Support Miss Matched Types We Need To Give An Error
+    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent && rightVariable.result == CLL_EVariableHandlerResult::VariablePresent) {
+        if (leftVariable.variable.type != rightVariable.variable.type) {
+            result = CLL_EOperationResult::MissMatchedTypes;
+            CLL_StdErr("Trying To Preform An Operation On Miss Matched Types",{},{});
+        }
+        if (leftVariable.variable.type == CLL_EVariableTypes::String || rightVariable.variable.type == CLL_EVariableTypes::String) {
+            CLL_StdErr("String Operations Are Not Supported By This Function", {CLL_StdLabels::TODO}, {"Make String Operations Work"});
+        }
+    }
+*/
 
 
     return {};

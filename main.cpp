@@ -57,82 +57,6 @@ bool expects(std::vector<std::string>& vector, int index, std::vector<std::strin
         if (i != substr[0]) return false;
     return true;
 }
-bool isVarType(std::string string) {
-    if (string == "Int") return true;
-    return false;
-}
-bool isKeyword(std::string string) {
-    if (isVarType(string)) return true;
-    else if (string == "=") return true;
-    return false;
-}
-bool isOperator(std::string string) {
-    if (string == "+") return true;
-    if (string == "-") return true;
-    if (string == "*") return true;
-    if (string == "/") return true;
-    if (string == "%") return true;
-    if (string == "**") return true;
-    if (string == "..") return true;
-    return false;
-}
-
-
-std::vector<int32_t> parseExpression(int32_t left, int32_t right, std::string op) {
-    std::vector<int32_t> integer;
-    bool arrayOperation = false;
-    // addition
-    if (op == "+") {
-        integer = {left+right};
-    }
-    // subtraction
-    else if (op == "-") {
-        integer = {left-right};
-    }
-    // multiplication
-    else if (op == "*") {
-        integer = {left * right};
-    }
-    // division
-    else if (op == "/") {
-        integer = {left / right};
-    }
-    // modulus
-    else if (op == "%") {
-        integer = {left % right};
-    }
-    // exponent
-    else if (op == "**") {
-        integer = {left};
-        for (uint32_t i = 0; i < right; i++) integer[0] *= left;
-    }
-    // range
-    else if(op == "..") {
-        std::vector<int32_t> range;
-        if (left < right) {
-            for (int32_t i = left; i <= right; i++) range.push_back(i);
-        } else if (right > left) {
-            for (int32_t i = right; i >= left; i--) range.push_back(i);
-        } else if (left == right){
-            integer = {left};
-        }
-        integer = range;
-    }
-    for (int32_t index = 0; auto& val : integer) {
-        if (val >= INT32_MAX)
-            std::cerr << "Math Operation Hit The 32 Bit Upper Limit There For Cannot Give A Completely Accurate Result\n  Operation: " << op << "\n  Equation: " << left << op << right << "\n  @Index: " << index << "\n @: Unknown Location";
-        if (val <= INT32_MIN)
-            std::cerr << "Math Operation Hit The 32 Bit Lower Limit There For Cannot Give A Completely Accurate Result\n  Operation: "<< op << "\n  Equation: " << left << op << right << "\n  @Index: " << index << "\n  @: Unknown Location";
-        index++;
-    }
-    return integer;
-}
-
-std::string vectorToString(std::vector<std::string>& vec, std::string splitStr) {
-    std::string str;
-    for (auto& i : vec) { str += i + ((i==vec[vec.size()-1])?"":(splitStr)); }
-    return str;
-}
 
 
 
@@ -181,19 +105,8 @@ public:
 
 int main() {
 
-    // EXP Start
 
-    auto contained = CLL_AssembleArray("{10,20,30}");
-    for (auto& i : contained)
-        std::cout << i << "\n";
-
-    // EXP End
-
-
-
-
-
-    FileReader reader("D:\\Languages\\CLL\\data.lang");
+    FileReader reader(R"(D:\Languages\CLL\data.lang)");
     auto wordBuffer = reader.getWordBuffer();
 
     struct Macro {
@@ -202,51 +115,18 @@ int main() {
         strvec format;
         strvec args;
     };
-    struct compileTime {
-        uint32_t varCount = 0;
-        std::map<std::string, uint32_t> varNames;
-        std::vector<std::string> varTypes;
-        std::vector<std::vector<std::string>> varValues;
-        void newVariable(std::string name, std::string type, std::vector<std::string> value) {
-            std::cout << "Variable Added To Compile Time Data:\n  |: " << type << " " << name << "\n";
-            std::cout << "  |: Data\n";
-            for (auto& i : value) std::cout << "    |: " << i << "\n";
-            varNames.emplace(name, varCount++);
-            varValues.push_back(value);
-            varTypes.push_back(type);
-        }
-        struct compileTimeResult {
-            bool hasVariable;
-            std::string name;
-            std::string type;
-            std::vector<std::string> varValues;
-        };
-        compileTimeResult getVariable(std::string name) {
-            if (!varNames.contains(name)) {
-                std::cerr << "Tried Obtaining A Variable Which Does Not Appear To Exist\n  Name: '" << name << "'\n  @: Unknown Location\n";
-                return {false, "", "", {}};
-            }
-            return { true, name, varTypes[varNames[name]], varValues[varNames[name]] };
-        }
-        bool hasVariable(std::string name) {
-            return varNames.contains(name);
-        }
-    };
 
     // Values To Be Used During Compilation
     std::vector<Macro> macros;
 
     CLL_ScopedVariables compileTime;
-    /*
-    compileTime compileTime;
-    compileTime.newVariable("runtimeVersion", "Int", {"1"});
-    compileTime.newVariable("runtimeName", "String", {"LongBow"});
-     */
 
 
     for (int i = 0; i < wordBuffer.size(); i++) {
         // We Skip `;` Because It Does Not Add To The Program
         if (wordBuffer[i].str == ";") continue;
+        /*
+        // TODO: Make Macros Record And Activate
         if (wordBuffer[i].str == "#") {
             Macro mc;
             i++;
@@ -272,7 +152,7 @@ int main() {
                 std::cerr << "Macro Expects That Following A Argument List The `=>` Operator Is Present\n";
             }
         }
-        // TODO: Activate Macros
+        */
 
         if (isVarType(wordBuffer[i].str)) {
             std::string name;

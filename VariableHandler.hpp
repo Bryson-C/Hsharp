@@ -64,6 +64,16 @@ inline bool isDigit(std::string string) {
     for (auto& i : string) if (!isdigit(i)) return false;
     return true;
 }
+inline bool isOperator(std::string string) {
+    if (string == "+") return true;
+    if (string == "-") return true;
+    if (string == "*") return true;
+    if (string == "/") return true;
+    if (string == "%") return true;
+    if (string == "**") return true;
+    if (string == "..") return true;
+    return false;
+}
 inline CLL_EVariableTypes CLL_InferType(std::string value) {
     if (isDigit(value)) return CLL_EVariableTypes::Integer64;
     else if (value.empty()) return CLL_EVariableTypes::Void;
@@ -77,6 +87,18 @@ public:
     std::map<std::string, uint32_t> varIndex;
     std::vector<CLL_Variable> vars;
 
+
+    inline CLL_VariableResult<std::string> newScopedVariable(CLL_Variable variable) {
+        size_t index = varCount++;
+        varIndex.emplace(variable.name, index);
+        vars.push_back(variable);
+        return {
+                .result = CLL_EVariableHandlerResult::VariableCreationSuccess,
+                .variable = variable,
+                .indexedSlice = {},
+                .cope = "",
+        };
+    }
     inline CLL_VariableResult<std::string> newScopedVariable(std::string name, CLL_EVariableTypes type, std::vector<std::string> data) {
         size_t index = varCount++;
         varIndex.emplace(name, index);
@@ -213,7 +235,7 @@ inline std::vector<std::string> CLL_AssembleArray(std::string string) {
         for (size_t i = 0; i < containers.size(); i++) {
             if (string[iter] == containers[i]) {
                 found = true;
-                if (i < 2) opens++;
+                if (i <= 2) opens++;
                 else opens--;
                 iter++;
             }
