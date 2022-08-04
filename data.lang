@@ -21,6 +21,11 @@ Int basic2 = 2*2;
 basic?;
 basic2?;
 
-
 Int exp = 10**10;
 exp?;
+
+Int index = range2[3..7, 5];
+index?;
+
+
+
