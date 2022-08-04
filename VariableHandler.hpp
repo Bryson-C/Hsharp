@@ -236,6 +236,11 @@ inline std::vector<std::string> CLL_AssembleArray(std::string string) {
     return content;
 }
 
+// If The Value Passed Into `name` Parameter Is Present In `variables` The Function Will Try To Get The Value At The Index/Index Range
+template<typename DataType>
+CLL_VariableResult<DataType> CLL_GetVariableIndexOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string));
+
+
 // If The Value Passed Into `name` Parameter Is Present As A Variable In `variables` It Will Return The Variable, Otherwise It Will Return A Cope Value
 template<typename DataType>
 CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string));

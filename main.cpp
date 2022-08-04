@@ -329,15 +329,32 @@ int main() {
                     }*/
                     // TODO: This IF Statement Is For Getting Indices, I Still Need To Apply Single To Single Operations On Them
                     if (wordBuffer[i].str == "[") {
-                        CLL_StringBuffer indexBuffer;
+                        std::vector<size_t> indices;
+                        // This Is To Skip The First `[`
                         i++;
                         while (wordBuffer[i].str != "]") {
-                            indexBuffer.push(wordBuffer[i].str);
+                            printf("Parsing '%s' During Current Iteration\n", wordBuffer[i].str.c_str());
+
+                            if (isOperator(wordBuffer[i+1])) {
+                                auto result = CLL_PreformAutoOperation(compileTime, {wordBuffer[i]}, {wordBuffer[i+2]}, wordBuffer[i+1]);
+                                for (auto& resultIndex : result.value)
+                                    indices.push_back(resultIndex);
+                                // We Only Need To Add 2 To The Iteration Because Once This If Statement Exits, The Iteration Will Go Up By 1
+                                i+=2;
+                            } else if (wordBuffer[i].str == ",") {
+                                i++;
+                                continue;
+                            } else if (isDigit(wordBuffer[i].str)) {
+                                indices.push_back(std::stoll(wordBuffer[i]));
+                            } else
+                                CLL_StdErr("Unhandled Index Error", {CLL_StdLabels::Offender}, {wordBuffer[i].str});
                             i++;
                         }
+                        // This Is To Skip The Second `]`
                         i++;
-                        for (auto& index : indexBuffer.content)
-                            std::cout << "Buffer: " << index << "\n";
+
+                        for (auto& index : indices)
+                            std::cout << "Using Index: " << index << "\n";
                     }
                     CLL_VariableResult<std::string> variable = CLL_GetVariableOptionally(compileTime, wordBuffer[i].str);
                     if (variable.result == CLL_EVariableHandlerResult::VariablePresent) {

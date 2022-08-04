@@ -4,7 +4,10 @@
 
 #include "VariableHandler.hpp"
 
+template<typename DataType>
+CLL_VariableResult<DataType> CLL_GetVariableIndexOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
 
+}
 
 template<typename DataType>
 CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& variables, std::string name, DataType (*cast)(std::string)) {
@@ -12,7 +15,7 @@ CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& vari
 
     // TODO: This Code Block Is For Getting The Index From An Array
     // TODO: Finish Doing This Code
-    for (size_t i = 0; i < name.size(); i++) {
+    /*for (size_t i = 0; i < name.size(); i++) {
         if (name[i] == '[') {
             std::string buffer;
             i++;
@@ -22,7 +25,7 @@ CLL_VariableResult<DataType> CLL_GetVariableOptionally(CLL_ScopedVariables& vari
             }
             printf("Buffer: %s\n", buffer.c_str());
         }
-    }
+    }*/
 
     if (variables.varIndex.contains(name)) {
         variable.result = CLL_EVariableHandlerResult::VariablePresent;
