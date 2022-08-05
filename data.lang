@@ -8,9 +8,6 @@ Int greeting = 20, 30, 40, 500;
 greeting?;
 
 
-Int h2 = hello;
-h2?;
-
 Int range = 1..10;
 Int range2 = range;
 range2?;
@@ -24,8 +21,10 @@ basic2?;
 Int exp = 10**10;
 exp?;
 
-Int index = range2[3..7, 5];
+Int index = range2[0..9];
 index?;
+
+
 
 
 

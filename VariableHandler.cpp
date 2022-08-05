@@ -39,33 +39,13 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_Sc
     bool isInt64 = (types[0] == CLL_EVariableTypes::Integer64 && types[1] == CLL_EVariableTypes::Integer64);
     bool isString = (types[0] == CLL_EVariableTypes::String && types[1] == CLL_EVariableTypes::String);
 
-    bool operationDefined = false;
-    CLL_OperationHandlerResult<std::vector<int64_t>> (*function)(CLL_ScopedVariables&, std::vector<std::string>, std::vector<std::string>, std::string) = CLL_PreformStringOperation;
 
-
-    if (isInt64 && !isArray) {
+    if (isInt64 && !isArray)
         CLL_StdOut("Inferring Operation Is Single Variable");
-        function = CLL_PreformOperation;
-        operationDefined = true;
-    }
-    else if (isInt64 && isArray) {
-        CLL_StdOut("Inferring Operation Is Array Variable");
-        function = CLL_PreformArrayOperation;
-        operationDefined = true;
-    }
-    else if (isString) {
-        CLL_StdOut("Inferring Operation Is String Variable");
-        function = CLL_PreformStringOperation;
-        operationDefined = true;
-    }
 
-    if (operationDefined)
-        return function(variables, left, right, op);
 
-    return {
-        .result = result,
-        .value = {},
-    };
+
+    return CLL_PreformOperation(variables, left, right, op);
 }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
     CLL_EOperationResult result = CLL_EOperationResult::Success;
@@ -160,43 +140,3 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
             .value = integer,
     };
 }
-CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformArrayOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
-    CLL_EOperationResult result = CLL_EOperationResult::Success;
-    if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
-    if (left.size() != right.size()) result = CLL_EOperationResult::InvalidArgumentRatio;
-    if ((left.size() == 1 && right.size() > left.size()) || (right.size() == 1 && left.size() > right.size())) result = CLL_EOperationResult::ArrayAgainstSingleValue;
-
-    std::vector<int64_t> leftInt, rightInt;
-
-    // TODO: Fix This
-    /*
-    auto leftVariable = CLL_GetVariableOptionally<int64_t>(variables, left[0], [](std::string name){ return std::stoll(name); });
-    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent)
-        for (auto& val : leftVariable.variable.data)
-            leftInt.push_back(std::stoll(val));
-    else
-        leftInt.push_back(leftVariable.cope);
-
-    auto rightVariable = CLL_GetVariableOptionally<int64_t>(variables, right[0], [](std::string name){ return std::stoll(name); });
-    if (rightVariable.result == CLL_EVariableHandlerResult::VariablePresent)
-        rightInt = std::stoll(rightVariable.variable.data[0]);
-    else
-        rightInt = rightVariable.cope;
-
-    // Since We Dont Support String Operations We Need To Give An Error
-    // Since We Cannot Support Miss Matched Types We Need To Give An Error
-    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent && rightVariable.result == CLL_EVariableHandlerResult::VariablePresent) {
-        if (leftVariable.variable.type != rightVariable.variable.type) {
-            result = CLL_EOperationResult::MissMatchedTypes;
-            CLL_StdErr("Trying To Preform An Operation On Miss Matched Types",{},{});
-        }
-        if (leftVariable.variable.type == CLL_EVariableTypes::String || rightVariable.variable.type == CLL_EVariableTypes::String) {
-            CLL_StdErr("String Operations Are Not Supported By This Function", {CLL_StdLabels::TODO}, {"Make String Operations Work"});
-        }
-    }
-*/
-
-
-    return {};
-}
-CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformStringOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) { return {}; }

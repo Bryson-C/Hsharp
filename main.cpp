@@ -57,7 +57,10 @@ bool expects(std::vector<std::string>& vector, int index, std::vector<std::strin
         if (i != substr[0]) return false;
     return true;
 }
-
+bool isVarType(std::string str) {
+    if (str == "Int") return true;
+    return false;
+}
 
 
 #include <filesystem>
