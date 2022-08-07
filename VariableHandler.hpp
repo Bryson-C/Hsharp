@@ -5,6 +5,9 @@
 #ifndef CLL_VARIABLEHANDLER_HPP
 #define CLL_VARIABLEHANDLER_HPP
 
+// TODO: Migrate Code To A Cleaner Code Base
+
+
 #include <vector>
 #include <string>
 #include <map>
@@ -72,6 +75,9 @@ inline bool isOperator(std::string string) {
     if (string == "%") return true;
     if (string == "**") return true;
     if (string == "..") return true;
+    // TODO: Implement ++ And --
+    //if (string == "++") return true;
+    //if (string == "--") return true;
     return false;
 }
 inline CLL_EVariableTypes CLL_InferType(std::string value) {
@@ -156,73 +162,6 @@ struct CLL_OperationHandlerResult {
 };
 
 
-template<typename DataType>
-struct CLL_ContainedData {
-private:
-    size_t count, allocSize;
-    uint32_t index;
-    void allocatorCheck() {
-        if (count >= allocSize) child = (CLL_ContainedData<DataType>*) realloc(child, sizeof(CLL_ContainedData<DataType>) * (allocSize *= 2));
-    }
-public:
-    CLL_ContainedData(std::vector<DataType> value = {}, uint32_t index = 0) : count(0), allocSize(5), index(index) {
-        child = (CLL_ContainedData<DataType>*) malloc(sizeof(CLL_ContainedData<DataType>) * (allocSize));
-        if (!value.empty())
-            child[count] = value;
-    }
-
-    inline void addData(DataType value) { data.push_back(value); ++index; }
-    inline void addData(std::vector<DataType> value) { for (auto& i : value) data.push_back(i); ++index; }
-    inline void addNewArrayData(std::vector<DataType> value) {
-        allocatorCheck();
-        child[count++] = CLL_ContainedData<DataType>(value, ++index);
-    }
-
-    std::vector<DataType> data;
-    CLL_ContainedData<DataType>* child;
-};
-
-inline CLL_ContainedData<std::string> CLL_GetContainedData(std::string string) {
-    CLL_ContainedData<std::string> containedData;
-    std::string containers = "{}()[]";
-    std::string opens, closes;
-
-    std::vector<std::string> scopeData;
-    std::string buffer;
-    size_t scope = 0;
-
-    size_t iter = 0;
-    while (string[iter]) {
-        for (size_t i = 0; i < containers.size(); i++) {
-            if (string[iter] == containers[i]) {
-                if (i == 0 || i % 2 == 0) opens += containers[i];
-                else closes += containers[i];
-
-                if (iter >= string.size()-1) goto EXIT_LOOP_LABEL;
-                iter++;
-                break;
-            }
-        }
-        if (opens.size()-closes.size() != scope) {
-            containedData.addData(scopeData);
-        }
-        scope = opens.size()-closes.size();
-        if (string[iter] == ',') {
-            printf("Buffer: %s\n", buffer.c_str());
-            scopeData.push_back(buffer);
-            iter++;
-            continue;
-        }
-        buffer += string[iter];
-        iter++;
-    }
-    EXIT_LOOP_LABEL:
-    
-    CLL_StdOut("OPENS:", {CLL_StdLabels::Data}, {opens});
-    CLL_StdOut("CLOSES:", {CLL_StdLabels::Data}, {closes});
-    return {};
-}
-
 // Turns A String Into A Array
 // For Example `[0,1,2,3,4]` Would Be Turned Into A Vector With 0, 1, 2, 3, And 4 As Elements
 inline std::vector<std::string> CLL_AssembleArray(std::string string) {
@@ -275,6 +214,46 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_Sc
 // Operations Preformed On Single Integers
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op);
 
+template<typename DataType>
+struct CLL_ArrayType {
+    std::vector<DataType> array;
+};
+
+
+inline void ParseExpression(CLL_ScopedVariables& variables, std::vector<std::string> string) {
+    std::vector<std::string> array;
+    std::string buffer;
+    for (int i = 0; i < string.size(); i ++) {
+
+        auto stringRead = [&string, &i, &buffer, &array, &variables](char end){
+            while (string[i] != std::to_string(end)) {
+                if (string[i] == ",") {
+                    array.push_back(buffer);
+                    buffer.clear();
+                    i++;
+                    continue;
+                } else if (isOperator(string[i+1])) {
+                    auto result = CLL_PreformAutoOperation(variables, {string[i]}, {string[i+2]}, string[i+1]);
+                    i+=3;
+                    continue;
+                }
+                buffer += string[i];
+                i++;
+            }
+        };
+
+
+        if (string[i] == "(") {
+            i++;
+            stringRead(')');
+        } else if (string[i] == "\"") {
+            i++;
+            stringRead('\"');
+        }
+        for (auto& wrd : array)
+            std::cout << wrd << "\n";
+    }
+}
 
 
 

@@ -1,30 +1,10 @@
 
 
+Int doLog = 1;
 
-Int hello = 10, 20;
-hello?;
-
-Int greeting = 20, 30, 40, 500;
-greeting?;
-
-
-Int range = 1..10;
-Int range2 = range;
-range2?;
-
-
-Int basic = 10,50;
-Int basic2 = 2*2;
-basic?;
-basic2?;
-
-Int exp = 10**10;
-exp?;
-
-Int index = range2[0..9];
-index?;
-
-
-
+!! doLog "Fails: The Integer Goes From 1 to 5 to 7 Successfully But Appends An Extra 1 At The End";
+!! doLog "1 Is Not Actually Pushed To The Variable";
+Int main = 1..5..7;
+main?;
 
 
