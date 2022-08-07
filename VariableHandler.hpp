@@ -255,6 +255,11 @@ inline void ParseExpression(CLL_ScopedVariables& variables, std::vector<std::str
     }
 }
 
+// When The Function Will Be Called:
+// 1. Get The Name And Find Out If It Is A Variable Or A Value; If It Is A Value Return The Number
+// 2. If It Is A Variable Check If Indices Is Valid, Or If Indices Are Empty Return The First Element Of `name`
+// 3. If Name Can Not Return Then (Do Something I Cant Think Of)
+inline void CLL_GetVariableValue(CLL_ScopedVariables& variables, std::string name, std::vector<int64_t> indices) {}
 
 
 
