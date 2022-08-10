@@ -1,5 +1,5 @@
 # LongBow
-Transpiled Language
+Transpiled Language :)
 
 ### No In Depth Testing Has Occured.
 ### Language Does Not Check Correctness Of Written Code
