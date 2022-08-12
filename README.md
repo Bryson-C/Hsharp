@@ -10,3 +10,6 @@ Transpiled Language :)
   
 - Make Code Easier To Read
 - Document More Code
+
+### Currently
+- Working On Array Operations
