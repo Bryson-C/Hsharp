@@ -10,6 +10,14 @@ Transpiled Language :)
   
 - Make Code Easier To Read
 - Document More Code
+- Finish New Parser Then Delete FileReader Directory
+- Code Generation
+- Compile Time Checks
+- Abstract Value Evaluater
+  - Ex:
+```C
+(1,2,3,(1..10)..20+1)
+```
 
 ### Currently
-- Working On Array Operations
+- New Parsing System
