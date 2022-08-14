@@ -1,5 +1,5 @@
 # LongBow
-Transpiled Language :)
+#### Transpiled Language
 
 ### No In Depth Testing Has Occured.
 ### Language Does Not Check Correctness Of Written Code
@@ -21,3 +21,8 @@ Transpiled Language :)
 
 ### Currently
 - New Parsing System
+- DataStage
+  - The Data Stage Is Basically A Expression Parser (I Must Have Felt Quirky When I Named It)
+  - It Activates Before The Tokenizer For Some Reason?
+  - Kind Of Hackable (Via Function Pointers)
+  - TODO: Make Tokenization Occur Before
