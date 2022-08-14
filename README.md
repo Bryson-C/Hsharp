@@ -21,6 +21,9 @@
 
 ### Currently
 - New Parsing System
+  - Splits The String From The File
+  - Finds The Row And Column Of The Code
+  - Makes Life Easier
 - DataStage
   - The Data Stage Is Basically A Expression Parser (I Must Have Felt Quirky When I Named It)
   - It Activates Before The Tokenizer For Some Reason?
