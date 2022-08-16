@@ -34,6 +34,13 @@ inline std::string CLL_VarTypeToString(CLL_EVariableTypes type) {
         default: return "";
     }
 }
+inline std::string CLL_VarTypeToCType(CLL_EVariableTypes type) {
+    switch (type) {
+        case CLL_EVariableTypes::String: return "const char*";
+        case CLL_EVariableTypes::Integer64: return "long long int";
+        default: return "";
+    }
+}
 
 enum class CLL_EVariableHandlerResult {
     VariablePresent,
@@ -63,10 +70,6 @@ struct CLL_ValueResult {
     DataType data;
 };
 
-inline bool isDigit(std::string string) {
-    for (auto& i : string) if (!isdigit(i)) return false;
-    return true;
-}
 inline bool isOperator(std::string string) {
     if (string == "+") return true;
     if (string == "-") return true;
@@ -81,7 +84,7 @@ inline bool isOperator(std::string string) {
     return false;
 }
 inline CLL_EVariableTypes CLL_InferType(std::string value) {
-    if (isDigit(value)) return CLL_EVariableTypes::Integer64;
+    if (isDigit(value).one) return CLL_EVariableTypes::Integer64;
     else if (value.empty()) return CLL_EVariableTypes::Void;
     return CLL_EVariableTypes::String;
 }

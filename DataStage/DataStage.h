@@ -1,0 +1,254 @@
+//
+// Created by Owner on 8/12/2022.
+//
+
+#ifndef CLL_DATASTAGE_H
+#define CLL_DATASTAGE_H
+
+#include <iostream>
+#include <vector>
+#include <map>
+#include <filesystem>
+
+#include "../Parser/Parser.h"
+#include "../Tokenizer/Tokenizer.h"
+
+struct Variable {
+private:
+public:
+    std::string name;
+    Tokenizer::MainToken type;
+
+    std::vector<std::string> initializer;
+
+
+    inline void print() {
+        printf("New Var: '%s' as '%i': (", name.c_str(), (int)type);
+        for (int i = 0; i < initializer.size(); i++) {
+            bool isBack = (i >= initializer.size()-1);
+            std::cout << initializer[i] << ((!isBack) ? ", " : "");
+        }
+        printf(")\n");
+    }
+};
+struct ScopedVariables {
+private:
+    uint32_t varCount = 0;
+public:
+    std::map<std::string, uint32_t> varIndex;
+    std::vector<Variable> variables;
+
+    void newVariable(std::string name, Tokenizer::MainToken type, std::vector<std::string> initializer) {
+        uint32_t index = varCount++;
+        varIndex.emplace(name, index);
+        variables.push_back({name, type, initializer});
+    }
+    void newVariable(Variable variable) {
+        newVariable(variable.name, variable.type, variable.initializer);
+    }
+    Variable getVariable(std::string name) {
+        return variables[varIndex[name]];
+    }
+};
+
+struct Function {
+private:
+public:
+    std::string name;
+    Tokenizer::MainToken type;
+    std::vector<std::string> argTypes;
+    std::vector<std::string> argNames;
+    std::vector<std::string> body;
+    inline void print() {
+        printf("Found Function: '%s' as '%i'\n", name.c_str(), (int)type);
+        for (int i = 0; i < argTypes.size(); i++)
+            printf("\tWith '%s' as '%s'\n", argNames[i].c_str(), argTypes[i].c_str());
+        printf("{\n");
+        for (auto& i : body)
+            printf("  %s  ", i.c_str());
+        printf("\n}\n");
+    }
+};
+struct ScopedFunctions {
+private:
+    uint32_t funcCount = 0;
+public:
+    std::map<std::string, uint32_t> funcIndex;
+    std::vector<Function> functions;
+
+    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::string> argTypes, std::vector<std::string> argNames, std::vector<std::string> body) {
+        uint32_t index = funcCount++;
+        funcIndex.emplace(name, funcCount);
+        functions.push_back({name, type, argTypes, argNames, body});
+    }
+    void newFunction(Function function) {
+        newFunction(function.name, function.type, function.argTypes, function.argNames, function.body);
+    }
+    Function getFunction(std::string name) {
+        return functions[funcIndex[name]];
+    }
+};
+
+struct Scope {
+    ScopedFunctions functions;
+    ScopedVariables variables;
+    Scope* childScope = nullptr;
+};
+
+
+
+
+inline std::vector<Tokenizer::Token> PreformOperation(
+                             std::vector<Tokenizer::Token> left,
+                             std::vector<Tokenizer::Token> right,
+                             Tokenizer::Token op) {
+
+    using TokenType = Tokenizer::MainToken;
+    std::vector<Tokenizer::Token> result;
+    if (left.size() != right.size()) std::cerr << "Miss-Matched Array Size For Operation\n";
+    for (uint32_t iter = 0; auto& l : left) {
+        auto& r = right[iter];
+
+        if (op.token == TokenType::OP_ADDITION) {
+            int64_t res = std::stoll(l.tokenData) + std::stoll(r.tokenData);
+            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "+", std::stoll(r.tokenData), res);
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_SUBTRACTION) {
+            int64_t res = std::stoll(l.tokenData) - std::stoll(r.tokenData);
+            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "-", std::stoll(r.tokenData), res);
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_DIVISION) {
+            int64_t res = std::stoll(l.tokenData) / std::stoll(r.tokenData);
+            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "/", std::stoll(r.tokenData), res);
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_MULTIPLICATION) {
+            int64_t res = std::stoll(l.tokenData) * std::stoll(r.tokenData);
+            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "x", std::stoll(r.tokenData), res);
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_MODULUS) {
+            int64_t res = std::stoll(l.tokenData) % std::stoll(r.tokenData);
+            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "%", std::stoll(r.tokenData), res);
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_EXPONENTIAL) {
+            int64_t res = (int64_t)pow(std::stoll(l.tokenData), std::stoll(r.tokenData));
+            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
+        }
+        else if (op.token == TokenType::OP_RANGE) {
+            int64_t res[] = {std::stoll(l.tokenData), std::stoll(r.tokenData)};
+            for (int i = res[0]; (res[0] > res[1]) ? i > res[1] : i < res[1]; (res[0] > res[1]) ? i-- : i++) {
+                result.push_back({TokenType::INTEGER, std::to_string(i), {l.filePosition}});
+            }
+        }
+    }
+    return result;
+}
+inline void EvaluateValue(std::vector<Tokenizer::Token> tokens) {}
+
+
+class DataStage {
+private:
+    void run(std::vector<Tokenizer::Token> tokens);
+    void run(Tokenizer tokenizer);
+
+    bool expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected);
+public:
+    Scope scope;
+
+    DataStage(std::vector<Tokenizer::Token> tokens);
+    DataStage(Tokenizer tokenizer);
+    ~DataStage();
+
+/*
+    [[deprecated("Using Tokenization Now, Therefore Using Strings Is Not Helpful")]]inline void run(std::vector<std::string>& wordBuffer) {
+        for (int i = 0; i < wordBuffer.size(); i++) {
+            std::cout << wordBuffer[i] << "\n";
+            if (wordBuffer[i] == "request") {
+                i++;
+                std::string pathStr;
+                for (auto& chr : wordBuffer[i])
+                    if (chr != '\"') pathStr += chr;
+
+                // TODO: Following This Function, The First Character In The File Is Not Read
+
+                Parser reader(pathStr);
+                for (int iter = 0; auto& val : reader.getWordBuffer()) {
+                    std::cout << "Inserting: " << val.str << "\n";
+                    wordBuffer.insert(wordBuffer.begin()+i+(iter++), val.str);
+                }
+                continue;
+            }
+            else if (bVariableTypeCheck(wordBuffer[i])) {
+                std::string type = wordBuffer[i++];
+                std::string name = wordBuffer[i++];
+                std::vector<std::string> initializer;
+                std::vector<std::string> argTypes, argNames;
+                std::vector<std::string> functionBody;
+                if (wordBuffer[i] == "=") {
+                    i++;
+                    std::string buffer;
+                    while (wordBuffer[i] != ";") {
+                        if (wordBuffer[i] == ",") {
+                            initializer.push_back(buffer);
+                            buffer.clear();
+                            i++;
+                            continue;
+                        } else if (bOperatorCheck(wordBuffer[i+1])) {
+                            i++;
+                            continue;
+                        } else if (bOperatorCheck(wordBuffer[i])) {
+                            auto result = CLL_PreformAutoOperation(variables, {wordBuffer[i-1]}, {wordBuffer[i+1]}, wordBuffer[i]);
+                            for (auto& val : result.value)
+                                initializer.push_back(std::to_string(val));
+                            i+=2;
+                            continue;
+                        }
+                        buffer += wordBuffer[i++];
+                    }
+                    if (!buffer.empty()) {
+                        initializer.push_back(buffer);
+                    }
+                } else if (wordBuffer[i] == "[") {
+                    i++;
+                    while (wordBuffer[i] != "]") {
+                        if (wordBuffer[i] == ",") { i++; continue; }
+                        if (bVariableTypeCheck(wordBuffer[i])) {
+                            argTypes.push_back(wordBuffer[i++]);
+                            argNames.push_back(wordBuffer[i]);
+                        }
+                        i++;
+                    }
+                    i++;
+                    if (wordBuffer[i] == "{") {
+                        i++;
+                        while (wordBuffer[i] != "}") {
+                            functionBody.push_back(wordBuffer[i++]);
+                        }
+                    } else if (wordBuffer[i] == "=" && wordBuffer[i+1] == ">") {
+                        i+=2;
+                        functionBody.emplace_back("return");
+                        while (wordBuffer[i] != ";") {
+                            functionBody.push_back(wordBuffer[i++]);
+                        }
+                        functionBody.emplace_back(";");
+                    }
+                    functions.newFunction(name, CLL_StringToVarType(type), argTypes, argNames, functionBody);
+                    fnWhenFunctionFound(name, type, argTypes, argNames, functionBody);
+                    continue;
+                }
+                variables.newScopedVariable(name, CLL_StringToVarType(type), initializer);
+                fnWhenVariableFound(name, type, initializer);
+            }
+        }
+    }
+*/
+
+
+};
+
+
+#endif //CLL_DATASTAGE_H

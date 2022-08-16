@@ -5,78 +5,11 @@
 #include "Parser.h"
 
 
-struct [[deprecated("Unused")]] SafeString {
-private:
-    enum class SafetyValue { Safe = 1, SafeIfNext = 2, SafeIfPrevious = 4 };
-public:
-    SafeString(const char* str) : base(str), index(0), isSafe(true) {}
-    SafeString(std::string str) : base(str), index(0), isSafe(true) {}
-    SafeString(std::ifstream& stream) : index(0), isSafe(true) {
-        std::string buffer;
-        while (std::getline(stream, buffer))
-            base += buffer;
-    }
-
-    std::string base;
-    int32_t index;
-    bool isSafe;
-
-    char Current() { return base[index]; }
-    char Next() { if (index < base.size()) isSafe = true; return base[++index]; }
-    char Previous() { if (index > 0) isSafe = true; return base[--index]; }
-
-    bool IsAlpha() { return isalpha(Current()); }
-    bool IsSpace() { return isspace(Current()); }
-    bool IsAlnum() { return isalnum(Current()); }
-    bool IsSymbol() { return (!IsSpace() && !IsAlnum()); }
-    bool IsDigit() { return isdigit(Current()); }
-};
-
-std::string GetFileContents(std::ifstream& file) {
-    std::string buffer, content;
-    while (std::getline(file, buffer)) content += {buffer + '\n'};
-    file.clear();
-    file.seekg(0, std::ios::beg);
-    return content;
-}
-/*
-std::vector<std::string> parseString(std::string& string) {
-    std::vector<std::string> wordBuffer;
-    std::string buffer;
-    // We Dont Want To Add An Iteration For Every Loop, This Is To Improve Control Of How The Chars Are Read
-    // This Is The First Pass
-    for (int i = 0; i < string.size();) {
-        if (isspace(string[i]) || !(isalnum(string[i]) && isspace(string[i]))) {
-            if (!buffer.empty()) {
-                wordBuffer.push_back(buffer);
-                buffer.clear();
-            }
-            i++;
-            continue;
-        }
-        buffer += string[i];
-        i++;
-    }
-    if (!buffer.empty()) wordBuffer.push_back(buffer);
-    for (auto& i : wordBuffer) {
-        printf("%s\n",i.c_str());
-    }
-    return wordBuffer;
-}
-*/
-std::vector<Parser::WordBufferWithPos> parse(std::ifstream& file) {
-    std::vector<Parser::WordBufferWithPos> wordBuffer;
-    std::string buffer;
-    size_t line = 0;
-    while (std::getline(file, buffer)) {
-        wordBuffer.push_back({buffer, line});
-        line++;
-    }
-    return wordBuffer;
-}
 
 
-std::vector<std::string> getKeywords(std::string string) {
+
+
+[[deprecated("Old System. I Dont Know If I Can Remove Tho")]] std::vector<std::string> getKeywords(std::string string) {
     std::vector<std::string> content;
     std::string buffer, strBuffer;
 
@@ -138,22 +71,27 @@ std::vector<std::string> getKeywords(std::string string) {
     return content;
 }
 
-
-void Parser::parse(std::string path) {
+std::vector<Parser::ParsedString> Parser::parse(std::string path) {
     std::ifstream file(path);
-    std::vector<WordBufferWithPos> content;
+    if (!file.is_open()) { std::cerr << "File '" << path << "' Couldn't Open!\n"; return {}; }
+    std::vector<ParsedString> content;
     std::string buffer;
     size_t line = 1;
     while (std::getline(file, buffer)) {
-        if (buffer.empty()) continue;
+        if (m_Settings & Settings::RecordNewLine && !buffer.empty())
+            content.push_back({"\\n", {line, buffer.size(), path}});
+
         for (int i = 0; i < buffer.size(); i++) {
-            m_FileId += (int)buffer[i];
+
+            // Skip Comments
             if (buffer[i] == '/' && buffer[i+1] == '/') {
                 while (i < buffer.size()) {
                     i++;
                 }
                 continue;
-            } else if (buffer[i] == '\"') {
+            }
+            // Reader Entire String
+            else if (buffer[i] == '\"') {
                 size_t startIndex = i;
                 std::string strBuffer = "\"";
                 i++;
@@ -161,24 +99,32 @@ void Parser::parse(std::string path) {
                     strBuffer += buffer[i++];
                 }
                 strBuffer += "\"";
-                content.emplace_back(strBuffer, line, startIndex);
+                content.push_back({strBuffer, {line, startIndex, path}});
                 continue;
-            } else if (isdigit(buffer[i])) {
+            }
+            // While The Character Is A Digit Continue Until It Is Not
+            else if (isdigit(buffer[i])) {
                 size_t startIndex = i;
                 std::string numBuffer;
                 while (isdigit(buffer[i])) {
                     numBuffer += buffer[i++];
                 }
-                content.emplace_back(numBuffer, line, startIndex);
+                content.push_back({numBuffer, {line, startIndex, path}});
                 i--;
                 continue;
-            } else if (isspace(buffer[i]) && (m_Settings & Settings::RecordNewLine)) {
+            }
+            // If Character Is A NewLine Or Tab And The RecordNewLine Setting Is On Record The NewLine Or Tab
+            else if (isspace(buffer[i]) && (m_Settings & Settings::RecordNewLine)) {
                 size_t startIndex = i;
                 if (buffer[i] == '\n' || buffer[i] == '\t') {
-                    content.emplace_back(std::to_string(buffer[i]), line, startIndex);
+                    content.push_back({std::to_string(buffer[i]), {line, startIndex, path}});
                     continue;
                 }
-            } else if (!isalnum(buffer[i]) && !isspace(buffer[i])) {
+            }
+            // If It Is A Symbol
+            // If It Is A Symbol Followed By The Same Symbol Combine Them
+            // Otherwise Just Record The Symbol
+            else if (!isalnum(buffer[i]) && !isspace(buffer[i])) {
                 size_t startIndex = i;
                 std::string symbolBuffer;
                 if (buffer[i+1] == buffer[i]) {
@@ -186,50 +132,87 @@ void Parser::parse(std::string path) {
                     symbolBuffer += buffer[i];
                     i++;
                 } else {
-                    symbolBuffer = buffer[i];
+                    // Special Cases For Big And Little Arrows
+                    if ((buffer[i] == '=' || buffer[i] == '-') && buffer[i+1] == '>') {
+                        symbolBuffer += buffer[i];
+                        symbolBuffer += buffer[i+1];
+                        i++;
+                    }
+                    else {
+                        symbolBuffer = buffer[i];
+                    }
                 }
-                content.emplace_back(symbolBuffer, line, startIndex);
+                content.push_back({symbolBuffer, {line, startIndex, path}});
                 continue;
-            } else if (isalpha(buffer[i])) {
+            }
+            // Record Normal Characters
+            else if (isalpha(buffer[i])) {
                 size_t startIndex = i;
                 std::string strBuffer;
                 while (!isspace(buffer[i]) && isalnum(buffer[i]) && i < buffer.size()) {
                     strBuffer += buffer[i++];
                 }
-                content.emplace_back(strBuffer, line, startIndex);
+                content.push_back({strBuffer, {line, startIndex, path}});
+                i--;
                 continue;
-            } else if (isspace(buffer[i])) {
+            }
+            // If It Is A Space Ignore
+            else if (isspace(buffer[i])) {
                 continue;
-            } else {
-                std::cerr << "Unknown Parse Rule At Line: " << line << ":" << i << "  Offender: '" << buffer[i] << "'\n";
+            }
+            // Report Any Unhandled Rules Of The Parser
+            else {
+                std::cerr << "[" << path << ":" << line << ":" << i << "]" << "Unknown Parse Rule\n";
             }
         }
-        content.emplace_back("\\n", line, buffer.size());
         line++;
     }
-    m_WordBuffer = content;
+    // Post Parsing
+    for (int i = 0; i < content.size(); i++) {
+        // Include Different Files
+        if (content[i].str == "request") {
+
+            auto includePath = content[i+1].str;
+            includePath.erase(includePath.begin());
+            includePath.erase(includePath.end()-1);
+
+            bool includedAlready = false;
+            for (auto& included : m_IncludedFiles) {
+                if (included == includePath) includedAlready = true;
+            }
+
+            content.erase(content.begin() + i, content.begin() + i + 3);
+
+            if (!includedAlready) {
+                auto wordBuffer = parse(includePath);
+
+                for (int j = 0; j < wordBuffer.size(); j++) {
+                    content.insert(content.begin() + i+j, wordBuffer[j]);
+                }
+                m_IncludedFiles.push_back(includePath);
+            } else {
+                std::cerr << content[i+1].errorString() << "Trying To Re-Include: '" << includePath << "' " << "\n";
+            }
+
+
+
+            continue;
+        }
+    }
+    return content;
 }
 
-Parser::Parser(std::string path, Settings settings) : m_FileId(0) {
-    bool print = false;
-    parse(path);
-/*
-    m_File.open(path);
-    m_Chars = GetFileContents(m_File);
-    for (auto& chr : m_Chars)
-        m_CharId += (int)chr;
-
-    int index = 0;
-    std::string buffer;
-    auto wordBuffer = getKeywords(m_Chars);
-    for (auto& i : wordBuffer) m_WordBuffer.push_back({.str = i, .line = m_Line});
-    m_File.close();*/
+Parser::Parser(std::string path, Settings settings) {
+    m_Settings = settings;
+    auto wordBuffer = parse(path);
+    for (int i = 0; i < wordBuffer.size(); i++)
+        m_WordBuffer.push_back(wordBuffer[i]);
 }
 
 
-std::vector<Parser::WordBufferWithPos> Parser::getWordBuffer() { return m_WordBuffer; }
+std::vector<Parser::ParsedString> Parser::getWordBuffer() { return m_WordBuffer; }
 
 
-bool Parser::operator==(Parser& reader) {
-    return reader.m_FileId == this->m_FileId;
+bool Parser::operator==(Parser& parser) {
+    return parser.m_ParsedId == this->m_ParsedId;
 }

@@ -1,10 +1,8 @@
 
+request "D:\Languages\CLL\operations.lang";
 
-Int doLog = 1;
-
-!! doLog "Fails: The Integer Goes From 1 to 5 to 7 Successfully But Appends An Extra 1 At The End";
-!! doLog "1 Is Not Actually Pushed To The Variable";
-Int main = 1..5..7;
-main?;
+// hello parser
 
 
+Int Add[Int a, Int b] { return a + b; };
+Int Sub[Int a, Int b] => a - b;

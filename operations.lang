@@ -1,0 +1,9 @@
+
+
+Int addition = 1 + 3;
+Int subtraction = 3 - 1;
+Int multiplication = 2 * 2;
+Int division = 10 / 2;
+Int modulus = 10 % 3;
+Int exponential = 5 ** 5;
+Int range = 1..5;

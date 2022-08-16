@@ -4,7 +4,8 @@
 #include <map>
 #include "ctype.h"
 
-#include "FileReader/FileReader.h"
+#include "Parser/Parser.h"
+#include "Tokenizer/Tokenizer.h"
 #include "CLL.hpp"
 #include "VariableHandler.hpp"
 
@@ -12,10 +13,15 @@ struct CLL_StringBuffer {
     std::vector<std::string> content;
     std::string buffer;
 
+    std::string operator[](size_t index) { return content[index]; }
+
     void operator+=(char c) { buffer += c; }
     void operator+=(std::string str) { buffer += str; }
+
     void push() { if (!buffer.empty()) { content.push_back(buffer); buffer.clear(); } }
     void push(std::string str) { if (!str.empty()) { content.push_back(str); } }
+    template<typename T>
+    void push(std::vector<T> vec) { for (auto& str : vec) content.push_back(std::to_string(str)); }
 };
 
 // String Collectors:
@@ -52,22 +58,96 @@ std::vector<std::string> removeWhiteSpace(std::vector<std::string>& strings) {
 }
 
 
-bool expects(std::vector<std::string>& vector, int index, std::vector<std::string> substr) {
-    for (auto& i : vector)
-        if (i != substr[0]) return false;
-    return true;
-}
 bool isVarType(std::string str) {
-    if (str == "Int") return true;
-    return false;
+    return isAny(str, {"Int"});
+}
+
+#include "DataStage/DataStage.h"
+
+/*
+std::string generateVariable(std::string name, std::string type, std::vector<std::string> initializer) {
+    std::string output;
+    output += type + " ";
+    output += name;
+    output += "[" + std::to_string(initializer.size()) + "] = ";
+    output += "{";
+    for (auto& i : initializer) {
+        output += i + ((i != initializer[initializer.size()-1])?", ":"");
+    }
+    output += "};\n";
+    return output;
+}
+std::string generateVariable(CLL_Variable variable) {
+    return generateVariable(variable.name, CLL_VarTypeToCType(variable.type), variable.data);
+}
+std::string generateFunction(std::string name, std::string type, std::vector<std::string> argTypes, std::vector<std::string> argNames, std::vector<std::string> body) {
+    std::string output;
+    output += type + " ";
+    output += name + "(";
+    for (int iter = 0; auto& i : argTypes) {
+        output += CLL_VarTypeToCType(CLL_StringToVarType(i)) + " " + argNames[iter];
+        if (iter < argTypes.size()-1) output += ", ";
+        iter++;
+    }
+    output += ")";
+    if (!body.empty()) {
+        // TODO: Implement Function Body
+        output += ";\n";
+    } else {
+        output += ";\n";
+    }
+    return output;
+}
+std::string generateFunction(CLL_Function function) {
+    return generateFunction(function.name, CLL_VarTypeToCType(function.type), function.argTypes, function.argNames, function.body);
 }
 
 
+void FoundFunction(std::string name, std::string type, std::vector<std::string> argTypes, std::vector<std::string> argNames, std::vector<std::string> body) {
+    printf("Found Function: '%s' as '%s'\n", name.c_str(), type.c_str());
+    for (int i = 0; i < argTypes.size(); i++)
+        printf("\tWith '%s' as '%s'\n", argNames[i].c_str(), argTypes[i].c_str());
+    printf("{\n");
+    for (auto& i : body)
+        printf("  %s  ", i.c_str());
+    printf("\n}\n");
+}
+void FoundVariable(std::string name, std::string type, std::vector<std::string> initializer) {
+    printf("New Var: '%s' as '%s': (", name.c_str(), type.c_str());
+    for (auto& i : initializer)
+        std::cout << i << ((i != initializer.back()) ? ", " : ")\n");
+}
+*/
 int main() {
 
+    Parser parser(R"(D:\Languages\CLL\data.lang)", Parser::Settings::RecordNewLine);
+    Tokenizer tokenizer(parser);
+    DataStage dataStage(tokenizer);
 
-    FileReader reader(R"(D:\Languages\CLL\data.lang)");
-    auto wordBuffer = reader.getWordBuffer();
+
+
+    /*std::vector<std::string> strBuffer;
+    for (auto& wrd : wordBuffer) strBuffer.push_back(wrd.str);
+
+    DataStage dataStage;
+    dataStage.bVariableTypeCheck = isVarType;
+    dataStage.fnWhenFunctionFound = FoundFunction;
+    dataStage.fnWhenVariableFound = FoundVariable;
+    dataStage.bOperatorCheck = isOperator;
+    dataStage.run(strBuffer);
+
+    std::ofstream file("D:\\Languages\\CLL\\output.c", std::ios::trunc);
+    for (auto& var : dataStage.variables.vars) {
+        file << generateVariable(var);
+    }
+    for (auto& func : dataStage.functions.functions) {
+        file << generateFunction(func);
+    }
+    file.close();
+*/
+    /*
+
+
 
 
     // Values To Be Used During Compilation
@@ -80,8 +160,6 @@ int main() {
 
         if (wordBuffer[i].str == "!!") {
             i++;
-
-
             int64_t shouldLog = false;
 
             auto var = CLL_GetVariableOptionally<int64_t>(compileTime, wordBuffer[i].str, [](std::string str){ return std::stoll(str); });
@@ -98,7 +176,31 @@ int main() {
             if (shouldLog) {
                 std::cerr << "User Defined Error:\n\t";
                 // This Function Requires The Parser To Correctly Parse Strings As A String
-                std::cerr << wordBuffer[i].str;
+                std::cerr << wordBuffer[i].str << "\n";
+            }
+
+            i++;
+            continue;
+        }
+        else if (wordBuffer[i].str == "??") {
+            i++;
+            int64_t shouldLog = false;
+
+            auto var = CLL_GetVariableOptionally<int64_t>(compileTime, wordBuffer[i].str, [](std::string str){ return std::stoll(str); });
+
+            if (var.result == CLL_EVariableHandlerResult::VariablePresent) {
+                shouldLog = std::stoll(var.variable.data[0]);
+                i++;
+            } else if (isDigit(wordBuffer[i].str)) {
+                shouldLog = std::stoll(wordBuffer[i].str);
+                i++;
+
+            }
+
+            if (shouldLog) {
+                std::cout << "User Defined Warning:\n\t";
+                // This Function Requires The Parser To Correctly Parse Strings As A String
+                std::cout << wordBuffer[i].str << "\n";
             }
 
             i++;
@@ -137,6 +239,8 @@ int main() {
                                     rightSting = wordBuffer[i+1].str,
                                     opString = wordBuffer[i].str;
 
+                        i+=2;
+
                         auto result = CLL_PreformAutoOperation(compileTime, {leftString}, {rightSting}, opString);
                         CLL_StdOut("Result Of Operation", {"Operation"}, {{leftString + " " + opString + " " + rightSting}});
                         if (result.result != CLL_EOperationResult::Success) CLL_StdErr("Operation On Data Was Not Successful", {CLL_StdLabels::Cope}, {"Cannot Cope"});
@@ -144,8 +248,6 @@ int main() {
                             buffer.push(std::to_string(res));
                             std::cout << "  |: " << res << "\n";
                         }
-
-                        i+=2;
                         continue;
                     }
 
@@ -208,28 +310,50 @@ int main() {
                 continue;
             }
 
-        } else {
-            auto var = compileTime.getScopedVarByName(wordBuffer[i].str);
-            if (var.result == CLL_EVariableHandlerResult::VariablePresent) {
-                i++;
-                if (wordBuffer[i].str == "?") {
-                    CLL_StdOut("Variable Requested To Be Printed", {CLL_StdLabels::Variable},{var.variable.name});
-                    if (!var.variable.data.empty()) {
-                        for (auto &varval: var.variable.data)
-                            std::cout << "  |: " << varval << "\n";
-                    }
-                    else {
-                        CLL_StdErr("Variable Has No Values Therefore Will Not Be Printed",{CLL_StdLabels::OffendingVariable}, {var.variable.name});
+        } else if (auto var = CLL_GetVariableOptionally(compileTime, wordBuffer[i].str); var.result == CLL_EVariableHandlerResult::VariablePresent) {
+            i++;
+            if (wordBuffer[i].str == "?") {
+                CLL_StdOut("Variable Requested To Be Printed", {CLL_StdLabels::Variable},{var.variable.name});
+                if (!var.variable.data.empty()) {
+                    for (auto &varval: var.variable.data) {
+                        std::cout << "  |: " << varval << "\n";
                     }
                 }
-            } else {
-                CLL_StdErr("Unknown Error", {CLL_StdLabels::Offender, CLL_StdLabels::Location}, {wordBuffer[i].str, std::to_string(wordBuffer[i].line)});
+                else {
+                    CLL_StdErr("Variable Has No Values Therefore Will Not Be Printed",{CLL_StdLabels::OffendingVariable}, {var.variable.name});
+                }
             }
+        }
+        else {
+            CLL_StringBuffer scope;
+            while (wordBuffer[i].str != ";") {
+                if (isAny(wordBuffer[i].str, {",","(",")"})) {
+                    scope.push();
+                    i++;
+                    continue;
+                }
+                if (isOperator(wordBuffer[i].str)) {
+                    scope.push();
+                    scope.push(wordBuffer[i].str);
+                    i++;
+                    continue;
+                }
+                scope += wordBuffer[i].str;
+                i++;
+            }
+            scope.push();
+
+            for (auto& val : scope.content) {
+                std::cout << val << ", \n";
+            }
+            break;
+            //The Code Is Not A Variable
+            CLL_StdErr("Unknown Error", {CLL_StdLabels::Offender, CLL_StdLabels::Location}, {wordBuffer[i].str, std::to_string(wordBuffer[i].line)});
         }
 
 
     }
-
+    */
 
     return 0;
 }

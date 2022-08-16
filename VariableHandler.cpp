@@ -33,23 +33,12 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformAutoOperation(CLL_Sc
     else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1)) result = CLL_EOperationResult::ArrayAgainstSingleValue;
     else if (left.size() != right.size()) result = CLL_EOperationResult::InvalidArgumentRatio;
 
-    // Defining Variable Information
-    CLL_EVariableTypes types[2] = { CLL_InferType(left[0]), CLL_InferType(right[0]) };
-    bool isArray = (left.size() > 1 && right.size() > 1);
-    bool isInt64 = (types[0] == CLL_EVariableTypes::Integer64 && types[1] == CLL_EVariableTypes::Integer64);
-    bool isString = (types[0] == CLL_EVariableTypes::String && types[1] == CLL_EVariableTypes::String);
-
-
-    if (isInt64 && !isArray)
-        CLL_StdOut("Inferring Operation Is Single Variable");
-
-
 
     return CLL_PreformOperation(variables, left, right, op);
 }
 CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_ScopedVariables& variables, std::vector<std::string> left, std::vector<std::string> right, std::string op) {
     CLL_EOperationResult result = CLL_EOperationResult::Success;
-    int64_t leftInt, rightInt;
+    std::vector<int64_t> leftInt, rightInt;
 
     if (left.empty() || right.empty()) result = CLL_EOperationResult::FaultyData;
     else if ((left.size() > 1 && right.size() == 1) || (right.size() > 1 && left.size() == 1))
@@ -61,23 +50,24 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
     auto leftVariable = CLL_GetVariableOptionally<int64_t>(variables, left[0],
                                                            [](std::string name) { return std::stoll(name); });
     if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent)
-        leftInt = std::stoll(leftVariable.variable.data[0]);
+        for (auto& i : leftVariable.variable.data)
+            leftInt.push_back(std::stoll(i));
     else
-        leftInt = leftVariable.cope;
+        leftInt.push_back(leftVariable.cope);
 
     auto rightVariable = CLL_GetVariableOptionally<int64_t>(variables, right[0],
                                                             [](std::string name) { return std::stoll(name); });
     if (rightVariable.result == CLL_EVariableHandlerResult::VariablePresent)
-        rightInt = std::stoll(rightVariable.variable.data[0]);
+        for (auto& i : rightVariable.variable.data)
+            rightInt.push_back(std::stoll(i));
     else
-        rightInt = rightVariable.cope;
+        rightInt.push_back(rightVariable.cope);
 
     bool twoSidedOperation = false;
 
     // Since We Dont Support String Operations We Need To Give An Error
     // Since We Cannot Support Miss Matched Types We Need To Give An Error
-    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent &&
-        rightVariable.result == CLL_EVariableHandlerResult::VariablePresent) {
+    if (leftVariable.result == CLL_EVariableHandlerResult::VariablePresent && rightVariable.result == CLL_EVariableHandlerResult::VariablePresent) {
         if (leftVariable.variable.type != rightVariable.variable.type) {
             result = CLL_EOperationResult::MissMatchedTypes;
             CLL_StdErr("Trying To Preform An Operation On Miss Matched Types", {}, {});
@@ -96,45 +86,77 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
         bool arrayOperation = false;
         bool exceededLimits = false;
         // addition
-        if (op == "+") { integer = {leftInt + rightInt}; }
+        if (op == "+") {
+            for (size_t iter = 0; auto& i : leftInt)
+                integer.push_back(i + rightInt[iter++]);
+        }
             // subtraction
-        else if (op == "-") { integer = {leftInt - rightInt}; }
+        else if (op == "-") {
+            for (size_t iter = 0; auto& i : leftInt)
+                integer.push_back(i - rightInt[iter++]);
+        }
             // multiplication
-        else if (op == "*") { integer = {leftInt * rightInt}; }
+        else if (op == "*") {
+            for (size_t iter = 0; auto& i : leftInt)
+                integer.push_back(i * rightInt[iter++]);
+        }
             // division
-        else if (op == "/") { integer = {leftInt / rightInt}; }
+        else if (op == "/") {
+            for (size_t iter = 0; auto& i : leftInt)
+                integer.push_back(i / rightInt[iter++]);
+        }
             // modulus
-        else if (op == "%") { integer = {leftInt % rightInt}; }
+        else if (op == "%") {
+            for (size_t iter = 0; auto& i : leftInt)
+                integer.push_back(i % rightInt[iter++]);
+        }
             // exponent
         else if (op == "**") {
-            integer = {leftInt};
-            int64_t lastStep = 0;
-            for (uint32_t i = 0; i < rightInt; i++) {
-                lastStep = integer[0] *= leftInt;
-                if (abs(lastStep) > integer[0]) exceededLimits = true;
+            for (size_t iter = 0; auto& i : leftInt) {
+                int64_t val = i;
+                int64_t lastStep = 0;
+                for (uint32_t i = 0; i < rightInt[iter]; i++) {
+                    lastStep = val *= rightInt[iter];
+                    if (abs(lastStep) > integer[0]) exceededLimits = true;
+                }
+                integer.push_back(val);
+                iter++;
             }
         }
             // range
         else if (op == "..") {
-            std::vector<int64_t> range;
-            if (leftInt < rightInt) {
-                for (int32_t i = leftInt; i <= rightInt; i++) range.push_back(i);
-            } else if (rightInt > leftInt) {
-                for (int32_t i = rightInt; i >= leftInt; i--) range.push_back(i);
-            } else if (leftInt == rightInt) {
-                integer = {leftInt};
+            if (leftInt.size() > 1 || rightInt.size() > 1) {
+                CLL_StdErr("Cannot Create 2D Arrays", {CLL_StdLabels::TODO}, {"Make The Return Value Of Operation 2 Dimensional"});
+            } else {
+                int64_t left = leftInt[0], right = rightInt[0];
+                std::vector<int64_t> range;
+                if (left < right)
+                {
+                    for (int64_t i = left; i <= right; i++) range.push_back(i);
+                }
+                else if (right > left)
+                {
+                    for (int64_t i = right; i >= left; i--) range.push_back(i);
+                }
+                else if (left == right)
+                {
+                    integer = {left};
+                }
+                integer = range;
             }
-            integer = range;
         }
         for (int32_t index = 0; auto &val: integer) {
-        if (val >= INT64_MAX || val <= INT64_MIN || exceededLimits) {
-            std::string equation = {std::to_string(leftInt) + " " + op + " " + std::to_string(rightInt)};
-            CLL_StdErr("Math Operation Hit The 64 Bit Limit There For Cannot Give A Completely Accurate Result",
-                       {"Operation", "Equation", CLL_StdLabels::Offender, CLL_StdLabels::Location},
-                       {op, equation, equation, "Unknown Location"});
+            if (val >= INT64_MAX || val <= INT64_MIN || exceededLimits) {
+
+                std::string equation = std::to_string(leftInt[0]);
+                equation += (leftInt.size() > 1) ? "...": "";
+                equation += {" " + op + " " + std::to_string(rightInt[0])};
+                equation += (rightInt.size() > 1) ? "...": "";
+
+                CLL_StdErr("Math Operation Hit The 64 Bit Limit There For Cannot Give A Completely Accurate Result",{"Operation", "Equation", CLL_StdLabels::Offender, CLL_StdLabels::Location}, {op, equation, equation, "Unknown Location"});
+            }
+            index++;
         }
-        index++;
-    }
     }
     return {
             .result = result,

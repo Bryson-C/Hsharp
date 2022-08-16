@@ -9,7 +9,6 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include <concepts>
 
 
 std::vector<std::string> getKeywords(std::string string);
@@ -33,11 +32,16 @@ Indexable HereTo(Indexable& vec, int& indexOffset, bool (*to)(IndexType)) {
 
 class Parser {
 public:
-    struct WordBufferWithPos {
-        std::string str;
+    struct FilePosition {
         size_t line, column;
+        std::string file;
+    };
+    struct ParsedString {
+        std::string str;
+        FilePosition filePosition;
 
-        inline void print() { std::cout << "[" << line << ":" << column << "]  " << str << "\n"; }
+        inline std::string errorString() { return {"[" + filePosition.file + ":" + std::to_string(filePosition.line) + ":" + std::to_string(filePosition.column) + "] "}; }
+        inline void print() { std::cout << errorString() << str << "\n"; }
         operator std::string() { return str; }
     };
     enum Settings {
@@ -45,16 +49,17 @@ public:
         RecordNewLine = 2,
     };
 private:
-    std::vector<WordBufferWithPos> m_WordBuffer;
+    std::vector<ParsedString> m_WordBuffer;
+    std::vector<std::string> m_IncludedFiles;
 
-    size_t m_FileId;
+    size_t m_ParsedId;
     Settings m_Settings;
 
-    void parse(std::string path);
+    std::vector<ParsedString> parse(std::string path);
 public:
     Parser(std::string path, Settings settings = Settings::None);
 
-    std::vector<WordBufferWithPos> getWordBuffer();
+    std::vector<ParsedString> getWordBuffer();
 
     bool operator==(Parser& reader);
 };
