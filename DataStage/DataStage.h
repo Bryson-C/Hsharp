@@ -19,7 +19,7 @@ public:
     std::string name;
     Tokenizer::MainToken type;
 
-    std::vector<std::string> initializer;
+    std::vector<int64_t> initializer;
 
 
     inline void print() {
@@ -38,7 +38,7 @@ public:
     std::map<std::string, uint32_t> varIndex;
     std::vector<Variable> variables;
 
-    void newVariable(std::string name, Tokenizer::MainToken type, std::vector<std::string> initializer) {
+    void newVariable(std::string name, Tokenizer::MainToken type, std::vector<int64_t> initializer) {
         uint32_t index = varCount++;
         varIndex.emplace(name, index);
         variables.push_back({name, type, initializer});
@@ -96,58 +96,71 @@ struct Scope {
 };
 
 
+inline std::vector<int64_t> GetValues(std::vector<Tokenizer::Token> tokens) {
+    for (int i = 0; i < tokens.size(); i++) {
+        if (tokens[i].token == Tokenizer::MainToken::OPEN_BRACKET) {
+            while (tokens[i].token != Tokenizer::MainToken::CLOSE_BRACKET) {
+
+            }
+        }
+    }
+}
 
 
-inline std::vector<Tokenizer::Token> PreformOperation(
-                             std::vector<Tokenizer::Token> left,
-                             std::vector<Tokenizer::Token> right,
-                             Tokenizer::Token op) {
+
+inline std::vector<int64_t> PreformOperation(std::vector<int64_t> left, std::vector<int64_t> right, Tokenizer::Token op) {
 
     using TokenType = Tokenizer::MainToken;
-    std::vector<Tokenizer::Token> result;
+    std::vector<int64_t> result;
     if (left.size() != right.size()) std::cerr << "Miss-Matched Array Size For Operation\n";
-    for (uint32_t iter = 0; auto& l : left) {
-        auto& r = right[iter];
 
-        if (op.token == TokenType::OP_ADDITION) {
-            int64_t res = std::stoll(l.tokenData) + std::stoll(r.tokenData);
-            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "+", std::stoll(r.tokenData), res);
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_SUBTRACTION) {
-            int64_t res = std::stoll(l.tokenData) - std::stoll(r.tokenData);
-            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "-", std::stoll(r.tokenData), res);
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_DIVISION) {
-            int64_t res = std::stoll(l.tokenData) / std::stoll(r.tokenData);
-            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "/", std::stoll(r.tokenData), res);
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_MULTIPLICATION) {
-            int64_t res = std::stoll(l.tokenData) * std::stoll(r.tokenData);
-            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "x", std::stoll(r.tokenData), res);
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_MODULUS) {
-            int64_t res = std::stoll(l.tokenData) % std::stoll(r.tokenData);
-            printf("Operation: %lli %s %lli = %lli\n", std::stoll(l.tokenData), "%", std::stoll(r.tokenData), res);
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_EXPONENTIAL) {
-            int64_t res = (int64_t)pow(std::stoll(l.tokenData), std::stoll(r.tokenData));
-            result.push_back({TokenType::INTEGER, std::to_string(res), {l.filePosition}});
-        }
-        else if (op.token == TokenType::OP_RANGE) {
-            int64_t res[] = {std::stoll(l.tokenData), std::stoll(r.tokenData)};
-            for (int i = res[0]; (res[0] > res[1]) ? i > res[1] : i < res[1]; (res[0] > res[1]) ? i-- : i++) {
-                result.push_back({TokenType::INTEGER, std::to_string(i), {l.filePosition}});
+    if (op.token == TokenType::OP_CONCAT) {
+        for (auto& arrL : left)
+            result.push_back(arrL);
+        for (auto& arrR : right)
+            result.push_back(arrR);
+    } else {
+        for (uint32_t iter = 0; auto &l: left) {
+            auto &r = right[iter++];
+
+            if (op.token == TokenType::OP_ADDITION) {
+                int64_t res = l + r;
+                printf("Operation: %lli %s %lli = %lli\n", l, "+", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_SUBTRACTION) {
+                int64_t res = l - r;
+                printf("Operation: %lli %s %lli = %lli\n", l, "-", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_DIVISION) {
+                int64_t res = l / r;
+                printf("Operation: %lli %s %lli = %lli\n", l, "/", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_MULTIPLICATION) {
+                int64_t res = l * r;
+                printf("Operation: %lli %s %lli = %lli\n", l, "x", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_MODULUS) {
+                int64_t res = l % r;
+                printf("Operation: %lli %s %lli = %lli\n", l, "%", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_EXPONENTIAL) {
+                int64_t res = l;
+                for (int64_t pow = r; r > 1; r--) res *= l;
+                printf("Operation: %lli %s %lli = %lli\n", l, "^", r, res);
+                result.push_back(res);
+            } else if (op.token == TokenType::OP_RANGE) {
+                int64_t res[] = {l, r};
+                for (int64_t i = res[0]; (res[0] > res[1]) ? i >= res[1] : i <= res[1]; (res[0] > res[1]) ? i-- : i++) {
+                    result.push_back(i);
+                }
+                printf("Operation: %lli %s %lli = ", l, "to", r);
+                for (int i = 0; i < result.size(); i++)
+                    printf("%lli%s", result[i], (i < result.size() - 1) ? ", " : "\n");
             }
         }
     }
     return result;
 }
-inline void EvaluateValue(std::vector<Tokenizer::Token> tokens) {}
 
 
 class DataStage {

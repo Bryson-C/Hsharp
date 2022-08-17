@@ -120,6 +120,8 @@ void FoundVariable(std::string name, std::string type, std::vector<std::string> 
 */
 int main() {
 
+
+
     Parser parser(R"(D:\Languages\CLL\data.lang)", Parser::Settings::RecordNewLine);
     Tokenizer tokenizer(parser);
     DataStage dataStage(tokenizer);

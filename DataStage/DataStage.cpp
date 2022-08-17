@@ -54,24 +54,39 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 i++;
                 std::vector<Tokenizer::Token> initializer;
                 while (tokens[i].token != TokenType::SEMICOLON) {
-                    if (tokens[i].token == TokenType::COMMA) {
-                        i++;
-                        continue;
-                    } else if (Tokenizer::isOperation(tokens[i])) {
-                        Tokenizer::Token left = (initializer.size() > 0) ? initializer[initializer.size()-1] : tokens[i-1], right = tokens[i+1], op = tokens[i];
-                        auto result = PreformOperation({left}, {right}, op);
-                        if (initializer.size() > 0) 
-                        for (auto& res : result)
-                            initializer.push_back(res);
+                    if (tokens[i].token == TokenType::COMMA) { i++; continue;}
+
+                    else if (Tokenizer::isOperation(tokens[i])) {
+                        Tokenizer::Token op = tokens[i];
+
+                        std::vector<int64_t> left, right;
+
+
+
+                        if (tokens[i-1].token == TokenType::NAMED)
+                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
+                        else
+                            left = {last(var.initializer)};
+
+                        if (tokens[i+1].token == TokenType::NAMED)
+                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
+                        else
+                            right = {std::stoll(tokens[i + 1].tokenData)};
+
+                        auto result = PreformOperation(left, right, op);
+                        push(var.initializer, result);
+
                         i++;
                         continue;
                     }
-                    if (!Tokenizer::isOperation(tokens[i+1]))
-                        initializer.push_back(tokens[i]);
+                    if (Tokenizer::isOperation(tokens[i+1])) {
+                        i++;
+                        continue;
+                    }
+                    push(var.initializer, std::stoll(tokens[i].tokenData));
                     i++;
                 }
-                for (auto& val : initializer)
-                    var.initializer.push_back(val.tokenData);
+
                 scope.variables.newVariable(var);
                 continue;
             }

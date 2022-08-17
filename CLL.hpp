@@ -69,6 +69,35 @@ bool isAll(T data, std::vector<T> comp) {
     return true;
 }
 
+template<typename T>
+T& last(std::vector<T>& vec) { return vec[vec.size()-1]; }
+template<typename T>
+T& first(std::vector<T>& vec) { return vec[0]; }
+template<typename T>
+void push(std::vector<T>& vec, std::vector<T> data) { for (auto& i : data) vec.push_back(i); }
+template<typename T>
+void push(std::vector<T>& vec, T data) {  vec.push_back(data); }
+
+
+/*
+ // TODO: Finish Struct
+template<typename T>
+class Vector {
+private:
+    T* data;
+    size_t elementCount;
+    size_t elementSize;
+    size_t getElementCount(T* array) { return (sizeof(array)/sizeof(array[0])); }
+public:
+    Vector(std::initializer_list<T> init) : elementCount(init.size()), elementSize(sizeof(data(init)[0])) {
+        data = (T*)malloc(sizeof(init.size()) * elementSize);
+        data = (T*)data(init);
+    }
+    inline T& last() { return data[elementCount-1]; }
+    inline T& first() { return data[0]; }
+    //inline void push(std::initializer_list<T> init) { size_t count = getElementCount(init); data[elementCount+=count] = init; }
+};
+*/
 
 
 #endif //CLL_CLL_H

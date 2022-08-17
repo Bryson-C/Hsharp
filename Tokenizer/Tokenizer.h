@@ -43,6 +43,7 @@ public:
         OP_MODULUS,
         OP_EXPONENTIAL,
         OP_RANGE,
+        OP_CONCAT,
     };
 
 
@@ -78,6 +79,7 @@ private:
             {"%", MainToken::OP_MODULUS},
             {"**", MainToken::OP_EXPONENTIAL},
             {"..", MainToken::OP_RANGE},
+            {"&", MainToken::OP_CONCAT},
     };
 
     Duople<bool, Token> parseStringToToken(Parser::ParsedString string) {
