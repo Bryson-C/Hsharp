@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "ctype.h"
+#include <ctype.h>
 
 #include "Parser/Parser.h"
 #include "Tokenizer/Tokenizer.h"

@@ -57,16 +57,21 @@ private:
 public:
     std::string name;
     Tokenizer::MainToken type;
-    std::vector<std::string> argTypes;
-    std::vector<std::string> argNames;
-    std::vector<std::string> body;
+    std::vector<std::vector<Tokenizer::Token>> argTypes;
+    std::vector<Tokenizer::Token> argNames;
+    std::vector<Tokenizer::Token> body;
     inline void print() {
         printf("Found Function: '%s' as '%i'\n", name.c_str(), (int)type);
-        for (int i = 0; i < argTypes.size(); i++)
-            printf("\tWith '%s' as '%s'\n", argNames[i].c_str(), argTypes[i].c_str());
+        for (int i = 0; i < argTypes.size(); i++) {
+            printf("\t[With '%s' as ", argNames[i].tokenData.c_str());
+            for (int j = 0; j < argTypes[i].size(); j++) {
+                printf("'%s'%s", argTypes[i][j].tokenData.c_str(), (j != argTypes[i].size()-1) ? " or " : "");
+            }
+            printf("]\n");
+        }
         printf("{\n");
         for (auto& i : body)
-            printf("  %s  ", i.c_str());
+            printf("  %s  ", i.tokenData.c_str());
         printf("\n}\n");
     }
 };
@@ -77,7 +82,7 @@ public:
     std::map<std::string, uint32_t> funcIndex;
     std::vector<Function> functions;
 
-    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::string> argTypes, std::vector<std::string> argNames, std::vector<std::string> body) {
+    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames, std::vector<Tokenizer::Token> body) {
         uint32_t index = funcCount++;
         funcIndex.emplace(name, funcCount);
         functions.push_back({name, type, argTypes, argNames, body});

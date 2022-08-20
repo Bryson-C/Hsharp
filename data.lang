@@ -3,3 +3,5 @@ request "D:\Languages\CLL\operations.lang";
 
 Int Add[Int a, Int b] { return a + b; };
 Int Sub[Int a, Int b] => a - b;
+
+Int generic[Int | String a, Int | String b];

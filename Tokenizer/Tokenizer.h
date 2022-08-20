@@ -44,6 +44,7 @@ public:
         OP_EXPONENTIAL,
         OP_RANGE,
         OP_CONCAT,
+        OP_OTHER,
     };
 
 
@@ -80,6 +81,7 @@ private:
             {"**", MainToken::OP_EXPONENTIAL},
             {"..", MainToken::OP_RANGE},
             {"&", MainToken::OP_CONCAT},
+            {"|", MainToken::OP_OTHER},
     };
 
     Duople<bool, Token> parseStringToToken(Parser::ParsedString string) {

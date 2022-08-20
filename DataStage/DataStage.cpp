@@ -33,7 +33,7 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
             // 1. A Type (Which It Should)
             // 2. A Name
             // 3. Ending Statement (Either `;` Or A Value)
-            expects(tokens, i, {{TokenType::INT_TYPE}, {TokenType::NAMED}, {TokenType::SEMICOLON, TokenType::EQUALS, TokenType::OPEN_BRACKET}});
+            //expects(tokens, i, {{TokenType::INT_TYPE}, {TokenType::NAMED}, {TokenType::SEMICOLON, TokenType::EQUALS, TokenType::OPEN_BRACKET}});
 
             var.type = tokens[i].token;
             func.type = tokens[i].token;
@@ -51,26 +51,35 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
             }
             // An Equals Means That The Data Is An Initialized Variable
             else if (tokens[i].token == TokenType::EQUALS) {
+                bool usesBrackets = false;
+                if (tokens[i+1].token == TokenType::OPEN_BRACKET) {
+                    usesBrackets = true;
+                    i++;
+                }
                 i++;
+
                 std::vector<Tokenizer::Token> initializer;
-                while (tokens[i].token != TokenType::SEMICOLON) {
-                    printf("%s%s\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
-                    if (tokens[i].token == TokenType::COMMA) { i++; continue; }
+                while ((usesBrackets)?(tokens[i].token != TokenType::CLOSE_BRACKET) : (tokens[i].token != TokenType::SEMICOLON)) {
+                    if (tokens[i].token == TokenType::COMMA) {
+                        if (!usesBrackets) std::cerr << tokens[i].filePosition.errorString() << "Arrays Need '[' And ']' For Open And Closing\n";
+                        i++;
+                        continue;
+                    }
 
                     else if (Tokenizer::isOperation(tokens[i+1])) {
                         i++;
                         std::vector<int64_t> left, right;
-                        if (tokens[i-1].token == TokenType::NAMED) {
-                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
-                        } else {
-                            left = {std::stoll(tokens[i-1].tokenData)};
-                        }
-                        if (tokens[i+1].token == TokenType::NAMED) {
-                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
-                        } else {
-                            right = {std::stoll(tokens[i+1].tokenData)};
-                        }
                         Tokenizer::Token op = tokens[i];
+
+                        if (tokens[i-1].token == TokenType::NAMED)
+                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
+                        else left = {std::stoll(tokens[i-1].tokenData)};
+
+                        if (tokens[i+1].token == TokenType::NAMED)
+                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
+                        else
+                            right = {std::stoll(tokens[i+1].tokenData)};
+
 
                         OperationStack stack;
                         stack.pushInt(left);
@@ -96,11 +105,53 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
             }
 
             // A Bracket Indicates That The Data Must Be A Argument Array, Meaning A Function
-            /*else if (tokens[i].token == TokenType::OPEN_BRACKET) {
+            else if (tokens[i].token == TokenType::OPEN_BRACKET) {
                 i++;
-                // TODO: Implement
+                // Arguments
+                std::vector<std::vector<Tokenizer::Token>> argTypes;
+                std::vector<Tokenizer::Token> argNames;
+
+                std::vector<Tokenizer::Token> currentArgTypes;
+
+                // Get The Arguments
+                while (tokens[i].token != TokenType::CLOSE_BRACKET) {
+                    if (isAny(tokens[i].token, {{TokenType::INT_TYPE, TokenType::STRING_TYPE}})) {
+                        currentArgTypes.push_back(tokens[i]);
+                    }
+                    else if (tokens[i].token == TokenType::OP_OTHER) {
+                    }
+                    else if (tokens[i].token == TokenType::NAMED) {
+                        argTypes.push_back(currentArgTypes);
+                        argNames.push_back(tokens[i]);
+                        currentArgTypes.clear();
+                    }
+                    i++;
+                }
+                // Push The Arguments
+                func.argTypes = argTypes;
+                func.argNames = argNames;
+                i++;
+                // Get The Body Of The Function
+                if (tokens[i].token == TokenType::OPEN_BRACE) {
+                    i++;
+                    while (tokens[i].token != TokenType::CLOSE_BRACE) {
+                        func.body.push_back(tokens[i]);
+                        i++;
+                    }
+                } else if (tokens[i].token == TokenType::BIG_ARROW) {
+                    i++;
+                    func.body.push_back({TokenType::RETURN, "return", tokens[i].filePosition});
+                    while (tokens[i].token != TokenType::SEMICOLON) {
+                        func.body.push_back(tokens[i]);
+                        i++;
+                    }
+                    func.body.push_back(tokens[i]);
+                }
                 scope.functions.newFunction(func);
-            }*/
+            }
+        }
+        else if (tokens[i].token == TokenType::NAMED) {
+
         }
     }
 }

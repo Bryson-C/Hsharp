@@ -7,3 +7,5 @@ Int division = 10 / 2;
 Int modulus = 10 % 3;
 Int exponential = 5 ** 5;
 Int range = 1..5;
+
+Int array = [10,20];
