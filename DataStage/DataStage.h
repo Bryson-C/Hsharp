@@ -12,6 +12,7 @@
 
 #include "../Parser/Parser.h"
 #include "../Tokenizer/Tokenizer.h"
+#include "Poperations.hpp"
 
 struct Variable {
 private:

@@ -22,6 +22,12 @@ namespace CLL_StdLabels {
     constexpr const char* OffendingVariable = "Offending Variable";
 
 };
+
+inline void panic(std::string error = "") {
+    std::cerr << error << "\n";
+    assert(0);
+}
+
 #define PANIC_ON_ERROR false
 inline void CLL_StdErr(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
     std::cerr << message << "\n";

@@ -54,48 +54,53 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 i++;
                 std::vector<Tokenizer::Token> initializer;
                 while (tokens[i].token != TokenType::SEMICOLON) {
-                    if (tokens[i].token == TokenType::COMMA) { i++; continue;}
+                    printf("%s%s\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
+                    if (tokens[i].token == TokenType::COMMA) { i++; continue; }
 
-                    else if (Tokenizer::isOperation(tokens[i])) {
+                    else if (Tokenizer::isOperation(tokens[i+1])) {
+                        i++;
+                        std::vector<int64_t> left, right;
+                        if (tokens[i-1].token == TokenType::NAMED) {
+                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
+                        } else {
+                            left = {std::stoll(tokens[i-1].tokenData)};
+                        }
+                        if (tokens[i+1].token == TokenType::NAMED) {
+                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
+                        } else {
+                            right = {std::stoll(tokens[i+1].tokenData)};
+                        }
                         Tokenizer::Token op = tokens[i];
 
-                        std::vector<int64_t> left, right;
-
-
-
-                        if (tokens[i-1].token == TokenType::NAMED)
-                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
-                        else
-                            left = {last(var.initializer)};
-
-                        if (tokens[i+1].token == TokenType::NAMED)
-                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
-                        else
-                            right = {std::stoll(tokens[i + 1].tokenData)};
-
-                        auto result = PreformOperation(left, right, op);
-                        push(var.initializer, result);
-
-                        i++;
+                        OperationStack stack;
+                        stack.pushInt(left);
+                        stack.pushInt(right);
+                        auto opString = OperationStack::opFromString(op.tokenData);
+                        auto opResult = stack.pushOp(opString);
+                        if (opResult.success) {
+                            for (auto& res : opResult.result)
+                                push(var.initializer, res);
+                        } else {
+                            std::cerr << tokens[i].filePosition.errorString() << "Operation Error\n";
+                            panic();
+                        }
+                        i+=2;
                         continue;
                     }
-                    if (Tokenizer::isOperation(tokens[i+1])) {
-                        i++;
-                        continue;
-                    }
-                    push(var.initializer, std::stoll(tokens[i].tokenData));
+                    if (tokens[i].token == TokenType::INTEGER)
+                        push(var.initializer, std::stoll(tokens[i].tokenData));
                     i++;
                 }
-
                 scope.variables.newVariable(var);
                 continue;
             }
+
             // A Bracket Indicates That The Data Must Be A Argument Array, Meaning A Function
-            else if (tokens[i].token == TokenType::OPEN_BRACKET) {
+            /*else if (tokens[i].token == TokenType::OPEN_BRACKET) {
                 i++;
                 // TODO: Implement
                 scope.functions.newFunction(func);
-            }
+            }*/
         }
     }
 }

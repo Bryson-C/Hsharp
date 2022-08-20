@@ -35,12 +35,13 @@ public:
     struct FilePosition {
         size_t line, column;
         std::string file;
+        std::string errorString() { return {"[" + file + ":" + std::to_string(line) + ":" + std::to_string(column) + "] "}; }
     };
     struct ParsedString {
         std::string str;
         FilePosition filePosition;
 
-        inline std::string errorString() { return {"[" + filePosition.file + ":" + std::to_string(filePosition.line) + ":" + std::to_string(filePosition.column) + "] "}; }
+        inline std::string errorString() { return filePosition.errorString(); }
         inline void print() { std::cout << errorString() << str << "\n"; }
         operator std::string() { return str; }
     };
