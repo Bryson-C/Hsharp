@@ -23,12 +23,12 @@ namespace CLL_StdLabels {
 
 };
 
-inline void panic(std::string error = "") {
+inline void panic(std::string error = "", int code = -1) {
     std::cerr << error << "\n";
-    assert(0);
+    exit(code);
 }
 
-#define PANIC_ON_ERROR false
+constexpr bool PANIC_ON_ERROR = false;
 inline void CLL_StdErr(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
     std::cerr << message << "\n";
     for (uint32_t i = 0; i < labels.size(); i++) {
@@ -36,7 +36,7 @@ inline void CLL_StdErr(std::string message, std::initializer_list<std::string> l
     }
     std::cout << "\n";
     if (PANIC_ON_ERROR)
-        exit(-1);
+        panic();
 }
 inline void CLL_StdOut(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
     std::cout << message << "\n";
@@ -51,12 +51,7 @@ struct Duople {
     DataType1 one;
     DataType2 two;
 };
-template<typename DataType1, typename DataType2, typename DataType3>
-struct Triple {
-    DataType1 one;
-    DataType2 two;
-    DataType3 three;
-};
+
 
 inline Duople<bool, int64_t> isDigit(std::string string) {
     bool isnum = true;

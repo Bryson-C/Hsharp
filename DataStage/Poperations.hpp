@@ -28,6 +28,7 @@ public:
         LEQL,
     };
 private:
+    static constexpr bool logOperation = false;
     std::map<std::string, OPs> stringToOp = {
             {"+", OPs::ADD},
             {"-", OPs::SUB},
@@ -49,9 +50,11 @@ private:
     std::vector<IntegerArray> stack;
 
     static void printOperation(IntegerType left, IntegerType right, std::string op, IntegerType result) {
+        if (!logOperation) return;
         std::cout << "Operation: " << left << " " << op << " " << right << " = " << result << "\n";
     }
     static void printOperation(IntegerType left, IntegerType right, std::string op, IntegerArray result) {
+        if (!logOperation) return;
         std::cout << "Operation: " << left << " " << op << " " << right << " = ";
         for (auto& i : result) {
             std::cout << i << ((i != result[result.size()-1]) ? ", ":"\n");

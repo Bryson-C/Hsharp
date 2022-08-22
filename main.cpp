@@ -8,6 +8,7 @@
 #include "Tokenizer/Tokenizer.h"
 #include "CLL.hpp"
 #include "VariableHandler.hpp"
+#include "Generator/Generator.hpp"
 
 struct CLL_StringBuffer {
     std::vector<std::string> content;
@@ -64,11 +65,16 @@ bool isVarType(std::string str) {
 
 #include "DataStage/DataStage.h"
 
+
 int main() {
+
 
     Parser parser(R"(D:\Languages\CLL\data.lang)", Parser::Settings::RecordNewLine);
     Tokenizer tokenizer(parser);
     DataStage dataStage(tokenizer);
+
+    std::ofstream output("D:\\Languages\\CLL\\output.c", std::ios::trunc);
+    Generator generator(output, dataStage);
 
     return 0;
 }

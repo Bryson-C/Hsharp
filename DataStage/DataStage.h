@@ -24,7 +24,7 @@ public:
 
 
     inline void print() {
-        printf("New Var: '%s' as '%i': (", name.c_str(), (int)type);
+        printf("New Var: '%s' as '%s': (", name.c_str(), Tokenizer::tokenToString(type).c_str());
         for (int i = 0; i < initializer.size(); i++) {
             bool isBack = (i >= initializer.size()-1);
             std::cout << initializer[i] << ((!isBack) ? ", " : "");
@@ -47,8 +47,9 @@ public:
     void newVariable(Variable variable) {
         newVariable(variable.name, variable.type, variable.initializer);
     }
-    Variable getVariable(std::string name) {
-        return variables[varIndex[name]];
+    Duople<bool,Variable> getVariable(std::string name) {
+        if (!varIndex.contains(name)) return {false, {}};
+        return {true, variables[varIndex[name]]};
     }
 };
 
@@ -61,7 +62,7 @@ public:
     std::vector<Tokenizer::Token> argNames;
     std::vector<Tokenizer::Token> body;
     inline void print() {
-        printf("Found Function: '%s' as '%i'\n", name.c_str(), (int)type);
+        printf("Found Function: '%s' as '%s'\n", name.c_str(), Tokenizer::tokenToString(type).c_str());
         for (int i = 0; i < argTypes.size(); i++) {
             printf("\t[With '%s' as ", argNames[i].tokenData.c_str());
             for (int j = 0; j < argTypes[i].size(); j++) {
@@ -84,21 +85,39 @@ public:
 
     void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames, std::vector<Tokenizer::Token> body) {
         uint32_t index = funcCount++;
-        funcIndex.emplace(name, funcCount);
+        funcIndex.emplace(name, index);
         functions.push_back({name, type, argTypes, argNames, body});
     }
     void newFunction(Function function) {
         newFunction(function.name, function.type, function.argTypes, function.argNames, function.body);
     }
-    Function getFunction(std::string name) {
-        return functions[funcIndex[name]];
+    Duople<bool,Function> getFunction(std::string name) {
+        if (!funcIndex.contains(name)) return {false, {}};
+        return {true, functions[funcIndex[name]]};
     }
 };
+
+struct Statement {
+    std::vector<Tokenizer::Token> statement;
+    Statement(std::vector<Tokenizer::Token> statement) { for (auto& i : statement) statement.push_back(i); }
+};
+struct ScopedStatements {
+    std::vector<Statement> statements;
+    void newStatement(std::vector<Tokenizer::Token> statement) {
+        statements.emplace_back(statement);
+    }
+    void newStatement(Statement statement) {
+        statements.push_back(statement);
+    }
+};
+
 
 struct Scope {
     ScopedFunctions functions;
     ScopedVariables variables;
-    Scope* childScope = nullptr;
+    ScopedStatements statements;
+    // Use If I Ever Get To This Point
+    //Scope* childScope = nullptr;
 };
 
 
@@ -111,8 +130,6 @@ inline std::vector<int64_t> GetValues(std::vector<Tokenizer::Token> tokens) {
         }
     }
 }
-
-
 
 inline std::vector<int64_t> PreformOperation(std::vector<int64_t> left, std::vector<int64_t> right, Tokenizer::Token op) {
 
@@ -167,7 +184,10 @@ inline std::vector<int64_t> PreformOperation(std::vector<int64_t> left, std::vec
     }
     return result;
 }
-
+/*
+inline Duople<bool, Function> expectFunction();
+inline Duople<bool, Variable> expectVariable();
+*/
 
 class DataStage {
 private:

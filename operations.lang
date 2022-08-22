@@ -7,5 +7,14 @@ Int division = 10 / 2;
 Int modulus = 10 % 3;
 Int exponential = 5 ** 5;
 Int range = 1..5;
+Int range2 = range;
 
 Int array = [10,20];
+
+
+Int words = 60..100;
+Int yyy = 999**1002;
+
+
+Int basic = 1;
+basic = 2;

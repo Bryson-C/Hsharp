@@ -55,6 +55,21 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 if (tokens[i+1].token == TokenType::OPEN_BRACKET) {
                     usesBrackets = true;
                     i++;
+                } else if (tokens[i+1].token == TokenType::NAMED) {
+                    i++;
+                    usesBrackets = false;
+
+                    auto functionResult = scope.functions.getFunction(tokens[i].tokenData);
+                    auto variableResult = scope.variables.getVariable(tokens[i].tokenData);
+
+                    // If It Is A Function
+                    if (functionResult.one) {
+                        //auto function = functionResult.two;
+                        // I Dont Really Know What To Do Here (What To Do When Var Is Initialized With Function?)
+                    } else {
+                        std::cerr << tokens[i].filePosition.errorString() << "Absolutely No Function Of The Name '" << tokens[i].tokenData << "' Exists\n";
+                    }
+
                 }
                 i++;
 
@@ -72,11 +87,11 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                         Tokenizer::Token op = tokens[i];
 
                         if (tokens[i-1].token == TokenType::NAMED)
-                            left = scope.variables.getVariable(tokens[i-1].tokenData).initializer;
+                            left = scope.variables.getVariable(tokens[i-1].tokenData).two.initializer;
                         else left = {std::stoll(tokens[i-1].tokenData)};
 
                         if (tokens[i+1].token == TokenType::NAMED)
-                            right = scope.variables.getVariable(tokens[i+1].tokenData).initializer;
+                            right = scope.variables.getVariable(tokens[i+1].tokenData).two.initializer;
                         else
                             right = {std::stoll(tokens[i+1].tokenData)};
 
@@ -115,7 +130,7 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
 
                 // Get The Arguments
                 while (tokens[i].token != TokenType::CLOSE_BRACKET) {
-                    if (isAny(tokens[i].token, {{TokenType::INT_TYPE, TokenType::STRING_TYPE}})) {
+                    if (isAny(tokens[i].token, {TokenType::INT_TYPE, TokenType::STRING_TYPE})) {
                         currentArgTypes.push_back(tokens[i]);
                     }
                     else if (tokens[i].token == TokenType::OP_OTHER) {
@@ -151,7 +166,25 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
             }
         }
         else if (tokens[i].token == TokenType::NAMED) {
+            // TODO: Found A Variable To Modify, Or Some Function Is Called
+            auto function = scope.functions.getFunction(tokens[i].tokenData);
+            auto variable = scope.variables.getVariable(tokens[i].tokenData);
 
+            if (variable.one && function.one)
+                std::cerr << tokens[i].filePosition.errorString()
+                          << "Name Collision Of Function '" << function.two.name
+                          << "' And Variable '" << variable.two.name << "'\n";
+            else if (function.one) tokens[i].token = TokenType::FUNCTION_CALL;
+            else if (variable.one) tokens[i].token = TokenType::VARIABLE_CALL;
+
+            std::vector<Tokenizer::Token> stmt;
+            while (tokens[i].token == TokenType::SEMICOLON) {
+                stmt.push_back(tokens[i++]);
+            }
+            i++;
+        }
+        else {
+            fprintf(stderr, "%s Unknown DataStage Case: '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
         }
     }
 }

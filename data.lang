@@ -5,3 +5,10 @@ Int Add[Int a, Int b] { return a + b; };
 Int Sub[Int a, Int b] => a - b;
 
 Int generic[Int | String a, Int | String b];
+
+Int noargs[];
+
+Int a = Sub[10, 20];
+
+// Comparisons Dont Work So Thats Kinda Funny
+Int bool = 10 > 5;
