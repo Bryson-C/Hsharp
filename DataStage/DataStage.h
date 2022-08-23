@@ -97,16 +97,9 @@ public:
     }
 };
 
-struct Statement {
-    std::vector<Tokenizer::Token> statement;
-    Statement(std::vector<Tokenizer::Token> statement) { for (auto& i : statement) statement.push_back(i); }
-};
 struct ScopedStatements {
-    std::vector<Statement> statements;
+    std::vector<std::vector<Tokenizer::Token>> statements;
     void newStatement(std::vector<Tokenizer::Token> statement) {
-        statements.emplace_back(statement);
-    }
-    void newStatement(Statement statement) {
         statements.push_back(statement);
     }
 };

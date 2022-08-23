@@ -15,8 +15,8 @@
 class Generator {
 public:
     static std::string writeStatement(Scope& scope, std::vector<Tokenizer::Token> tokens);
-    static std::string writeFunction(Function function);
-    static std::string writeVariable(Variable variable);
+    static std::string writeFunction(Scope& scope, Function function);
+    static std::string writeVariable(Scope& scope, Variable variable);
 private:
     // This Only Excepts C Headers
     std::vector<std::string> alwaysInclude = {};

@@ -24,6 +24,7 @@ bool DataStage::expects(std::vector<Tokenizer::Token> tokens, int index, std::ve
 
 
 void DataStage::run(std::vector<Tokenizer::Token> tokens) {
+    bool LOG_UNHANDLED_RESULT = false;
     using TokenType = Tokenizer::MainToken;
     for (int i = 0; i < tokens.size(); i++) {
         Variable var;
@@ -178,13 +179,17 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
             else if (variable.one) tokens[i].token = TokenType::VARIABLE_CALL;
 
             std::vector<Tokenizer::Token> stmt;
-            while (tokens[i].token == TokenType::SEMICOLON) {
-                stmt.push_back(tokens[i++]);
-            }
+            do {
+                stmt.push_back(tokens[i]);
+                i++;
+            } while (tokens[i].token != TokenType::SEMICOLON);
+            stmt.push_back(tokens[i]);
+            scope.statements.newStatement(stmt);
             i++;
         }
         else {
-            fprintf(stderr, "%s Unknown DataStage Case: '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
+            if (LOG_UNHANDLED_RESULT)
+                fprintf(stderr, "%s Unknown DataStage Case: '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
         }
     }
 }

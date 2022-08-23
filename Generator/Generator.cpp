@@ -5,18 +5,69 @@
 #include "Generator.hpp"
 
 std::string Generator::writeStatement(Scope& scope, std::vector<Tokenizer::Token> tokens) {
+    std::string stmt;
     for (int i = 0; i < tokens.size(); i++) {
-        if (tokens[i].token == Tokenizer::MainToken::NAMED) {
+        if (tokens[i].token == Tokenizer::MainToken::VARIABLE_CALL) {
             auto variableResult = scope.variables.getVariable(tokens[i].tokenData);
+
+            stmt += variableResult.two.name;
+            i++;
+            if (tokens[i].token == Tokenizer::MainToken::EQUALS)
+                stmt += " = ";
+            else {
+                fprintf(stderr,"%s I Dont Know What To Do Here '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
+            }
+            i++;
+            if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) goto FUNCTION_RECORD_LABEL;
+            else if (tokens[i].token == Tokenizer::MainToken::VARIABLE_CALL) {
+                while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) i++;
+            } else {
+                while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                    stmt += tokens[i].tokenData;
+                    i++;
+                }
+                stmt += ";";
+            }
+            stmt += "\n";
+        } else if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) {
+            FUNCTION_RECORD_LABEL:
             auto functionResult = scope.functions.getFunction(tokens[i].tokenData);
+            i++;
+
+            stmt += functionResult.two.name;
+            while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                if (tokens[i].token == Tokenizer::MainToken::CLOSE_BRACKET) {
+                    stmt += ");\n";
+                    break;
+                } else if (tokens[i].token == Tokenizer::MainToken::OPEN_BRACKET) {
+                    stmt += "(";
+                    i++;
+                    continue;
+                } else if (tokens[i].token == Tokenizer::MainToken::COMMA) {
+                    stmt += ",";
+                    i++;
+                    continue;
+                } else {
+                    stmt += tokens[i].tokenData;
+                    i++;
+                    continue;
+                }
+            }
+
+        } else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
+            stmt += "\n";
         }
+        /*else {
+            stmt += tokens[i].tokenData + " ";
+            continue;
+        }*/
     }
-    return "";
+    return stmt;
 }
 
 
 // TODO: Write Rest Of Function
-std::string Generator::writeFunction(Function function) {
+std::string Generator::writeFunction(Scope& scope, Function function) {
     std::string fn;
     for (int iter = 0; auto& types : function.argTypes) {
         if (types.size() > 1) fn += "// TODO: Add Support For Multiple Types In To Argument_" + std::to_string(iter) + "\n";
@@ -31,14 +82,17 @@ std::string Generator::writeFunction(Function function) {
     }
     fn += ")";
     if (!function.body.empty()) {
-        fn += "; // TODO: Implement Function Body Generation\n";
+        //fn += "; // TODO: Implement Function Body Generation\n";
+        fn += " {";
+        fn += writeStatement(scope, function.body);
+        fn += "}\n";
     } else {
         fn += "; // TODO: Add Body To Function, For Dead Code Is Sloppy\n";
     }
     return fn;
 }
 
-std::string Generator::writeVariable(Variable variable) {
+std::string Generator::writeVariable(Scope& scope, Variable variable) {
     std::string var;
     var += Tokenizer::typeToString(variable.type) + " ";
     var += variable.name;
@@ -67,12 +121,16 @@ Generator::Generator(std::ofstream& outfile, DataStage dataStage) {
     bool hasEntry = false;
     for (auto& function : dataStage.scope.functions.functions) {
         if (function.name == "main") hasEntry = true;
-        outfile << writeFunction(function);
+        outfile << writeFunction(dataStage.scope, function);
     }
     if (!hasEntry) std::cerr << "No Entry Point In Program\n";
 
     for (auto& variable : dataStage.scope.variables.variables) {
-        outfile << writeVariable(variable);
+        outfile << writeVariable(dataStage.scope, variable);
+    }
+
+    for (auto& statement : dataStage.scope.statements.statements) {
+        outfile << writeStatement(dataStage.scope, statement);
     }
 }
 
