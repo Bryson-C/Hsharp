@@ -86,14 +86,14 @@ void push(std::vector<T>& vec, T data) {  vec.push_back(data); }
 
 
 /*
- // TODO: Finish Struct
+// TODO: Finish Struct
 template<typename T>
 class Vector {
 private:
     T* data;
     size_t elementCount;
     size_t elementSize;
-    size_t getElementCount(T* array) { return (sizeof(array)/sizeof(array[0])); }
+   // size_t getElementCount(T* array) { return (sizeof(array)/sizeof(array[0])); }
 public:
     Vector(std::initializer_list<T> init) : elementCount(init.size()), elementSize(sizeof(data(init)[0])) {
         data = (T*)malloc(sizeof(init.size()) * elementSize);

@@ -69,19 +69,16 @@ bool isVarType(std::string str) {
 int main() {
 
 
-    Parser parser(R"(D:\Languages\CLL\data.lang)", Parser::Settings::RecordNewLine);
+    Parser parser(R"(D:\Languages\CLL\data.lang)"/*, Parser::Settings::RecordNewLine*/);
+
     Tokenizer tokenizer(parser);
     DataStage dataStage(tokenizer);
-    for (auto& i : dataStage.scope.statements.statements) {
-        printf("Statement: ");
-        for (auto& j : i) {
-            printf("%s ", j.tokenData.c_str());
-        }
-        printf("\n");
-    }
+
 
     std::ofstream output(R"(D:\Languages\CLL\output.c)", std::ios::trunc);
     Generator generator(output, dataStage);
+
+
 
     return 0;
 }

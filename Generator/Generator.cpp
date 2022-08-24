@@ -8,59 +8,41 @@ std::string Generator::writeStatement(Scope& scope, std::vector<Tokenizer::Token
     std::string stmt;
     for (int i = 0; i < tokens.size(); i++) {
         if (tokens[i].token == Tokenizer::MainToken::VARIABLE_CALL) {
-            auto variableResult = scope.variables.getVariable(tokens[i].tokenData);
-
-            stmt += variableResult.two.name;
+            auto variable = scope.variables.getVariable(tokens[i].tokenData).two;
+            stmt += variable.name;
             i++;
-            if (tokens[i].token == Tokenizer::MainToken::EQUALS)
-                stmt += " = ";
-            else {
-                fprintf(stderr,"%s I Dont Know What To Do Here '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
-            }
-            i++;
-            if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) goto FUNCTION_RECORD_LABEL;
-            else if (tokens[i].token == Tokenizer::MainToken::VARIABLE_CALL) {
-                while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) i++;
-            } else {
+            if (tokens[i].token == Tokenizer::MainToken::EQUALS) {
+                // TODO: Actually Handle Data Given In File
                 while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
-                    stmt += tokens[i].tokenData;
+                    if (tokens[i].token == Tokenizer::MainToken::OPEN_BRACKET) { stmt += "{"; i++; continue; }
+                    else if (tokens[i].token == Tokenizer::MainToken::CLOSE_BRACKET) { stmt += "}"; i++; continue; }
+                    else stmt += tokens[i].tokenData;
                     i++;
                 }
-                stmt += ";";
+            } else {
+                fprintf(stderr,"Applying Unknown Operation To Variable OP: '%s'\n", tokens[i].tokenData.c_str());
             }
-            stmt += "\n";
-        } else if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) {
-            FUNCTION_RECORD_LABEL:
-            auto functionResult = scope.functions.getFunction(tokens[i].tokenData);
-            i++;
-
-            stmt += functionResult.two.name;
+            stmt += ";\n";
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) {
+            auto function = scope.functions.getFunction(tokens[i].tokenData).two;
+            stmt += function.name;
+            stmt += "(";
             while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
-                if (tokens[i].token == Tokenizer::MainToken::CLOSE_BRACKET) {
-                    stmt += ");\n";
-                    break;
-                } else if (tokens[i].token == Tokenizer::MainToken::OPEN_BRACKET) {
-                    stmt += "(";
-                    i++;
-                    continue;
-                } else if (tokens[i].token == Tokenizer::MainToken::COMMA) {
-                    stmt += ",";
-                    i++;
-                    continue;
-                } else {
-                    stmt += tokens[i].tokenData;
-                    i++;
-                    continue;
-                }
+                stmt += tokens[i].tokenData;
+                i++;
             }
-
-        } else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
+            stmt += ")";
+            stmt += ";\n";
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
             stmt += "\n";
         }
-        /*else {
-            stmt += tokens[i].tokenData + " ";
+        else {
+            stmt += tokens[i].tokenData;
+            i++;
             continue;
-        }*/
+        }
     }
     return stmt;
 }
@@ -81,10 +63,15 @@ std::string Generator::writeFunction(Scope& scope, Function function) {
         if (i != function.argNames.size()-1) fn += ", ";
     }
     fn += ")";
-    if (!function.body.empty()) {
+    if (!function.bodyVariables.variables.empty() || !function.bodyStatements.statements.empty()) {
         //fn += "; // TODO: Implement Function Body Generation\n";
         fn += " {";
-        fn += writeStatement(scope, function.body);
+        if (!function.bodyVariables.variables.empty())
+            for (auto& var : function.bodyVariables.variables)
+                fn += writeVariable(scope, var);
+        if (!function.bodyStatements.statements.empty())
+            for (auto& statement : function.bodyStatements.statements)
+                fn += writeStatement(scope, statement);
         fn += "}\n";
     } else {
         fn += "; // TODO: Add Body To Function, For Dead Code Is Sloppy\n";
@@ -119,18 +106,18 @@ Generator::Generator(std::ofstream& outfile, DataStage dataStage) {
         outfile << include << "\n";
 
     bool hasEntry = false;
-    for (auto& function : dataStage.scope.functions.functions) {
+    for (auto& function : dataStage.globalScope.functions.functions) {
         if (function.name == "main") hasEntry = true;
-        outfile << writeFunction(dataStage.scope, function);
+        outfile << writeFunction(dataStage.globalScope, function);
     }
     if (!hasEntry) std::cerr << "No Entry Point In Program\n";
 
-    for (auto& variable : dataStage.scope.variables.variables) {
-        outfile << writeVariable(dataStage.scope, variable);
+    for (auto& variable : dataStage.globalScope.variables.variables) {
+        outfile << writeVariable(dataStage.globalScope, variable);
     }
 
-    for (auto& statement : dataStage.scope.statements.statements) {
-        outfile << writeStatement(dataStage.scope, statement);
+    for (auto& statement : dataStage.globalScope.statements.statements) {
+        outfile << writeStatement(dataStage.globalScope, statement);
     }
 }
 

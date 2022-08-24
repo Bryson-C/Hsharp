@@ -4,13 +4,13 @@
 
 #include "DataStage.h"
 
-DataStage::DataStage(std::vector<Tokenizer::Token> tokens) { run(tokens); }
-DataStage::DataStage(Tokenizer tokenizer) { run(tokenizer); }
+DataStage::DataStage(std::vector<Tokenizer::Token> tokens) { globalScope = run(tokens); }
+DataStage::DataStage(Tokenizer tokenizer) { globalScope = run(tokenizer); }
 DataStage::~DataStage() {
-    for (auto& var : scope.variables.variables) {
+    for (auto& var : globalScope.variables.variables) {
         var.print();
     }
-    for (auto& func : scope.functions.functions) {
+    for (auto& func : globalScope.functions.functions) {
         func.print();
     }
 }
@@ -22,10 +22,12 @@ bool DataStage::expects(std::vector<Tokenizer::Token> tokens, int index, std::ve
     return true;
 }
 
-
-void DataStage::run(std::vector<Tokenizer::Token> tokens) {
+Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
     bool LOG_UNHANDLED_RESULT = false;
     using TokenType = Tokenizer::MainToken;
+
+    Scope scope;
+
     for (int i = 0; i < tokens.size(); i++) {
         Variable var;
         Function func;
@@ -148,21 +150,28 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 func.argNames = argNames;
                 i++;
                 // Get The Body Of The Function
+                std::vector<Tokenizer::Token> funcBody;
                 if (tokens[i].token == TokenType::OPEN_BRACE) {
                     i++;
                     while (tokens[i].token != TokenType::CLOSE_BRACE) {
-                        func.body.push_back(tokens[i]);
+                        funcBody.push_back(tokens[i]);
                         i++;
                     }
                 } else if (tokens[i].token == TokenType::BIG_ARROW) {
                     i++;
-                    func.body.push_back({TokenType::RETURN, "return", tokens[i].filePosition});
+                    funcBody.push_back({TokenType::RETURN, "return", tokens[i].filePosition});
                     while (tokens[i].token != TokenType::SEMICOLON) {
-                        func.body.push_back(tokens[i]);
+                        funcBody.push_back(tokens[i]);
                         i++;
                     }
-                    func.body.push_back(tokens[i]);
+                    funcBody.push_back(tokens[i]);
                 }
+                if (!funcBody.empty()) {
+                    auto insides = run(funcBody);
+                    func.bodyStatements = insides.statements;
+                    func.bodyVariables = insides.variables;
+                }
+
                 scope.functions.newFunction(func);
             }
         }
@@ -192,7 +201,8 @@ void DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 fprintf(stderr, "%s Unknown DataStage Case: '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
         }
     }
+    return scope;
 }
-void DataStage::run(Tokenizer tokenizer) {
-    run(tokenizer.getTokens());
+Scope DataStage::run(Tokenizer tokenizer) {
+    return run(tokenizer.getTokens());
 }

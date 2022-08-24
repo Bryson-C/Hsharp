@@ -14,6 +14,8 @@
 #include "../Tokenizer/Tokenizer.h"
 #include "Poperations.hpp"
 
+struct Scope;
+
 struct Variable {
 private:
 public:
@@ -53,14 +55,32 @@ public:
     }
 };
 
+struct ScopedStatements {
+    std::vector<std::vector<Tokenizer::Token>> statements;
+    void newStatement(std::vector<Tokenizer::Token> statement) {
+        statements.push_back(statement);
+    }
+};
+
+
 struct Function {
 private:
+    using TokenArray = std::vector<Tokenizer::Token>;
+    using ArgTypeArray = std::vector<TokenArray>;
+
 public:
     std::string name;
     Tokenizer::MainToken type;
-    std::vector<std::vector<Tokenizer::Token>> argTypes;
-    std::vector<Tokenizer::Token> argNames;
-    std::vector<Tokenizer::Token> body;
+    ArgTypeArray argTypes;
+    TokenArray argNames;
+    ScopedStatements bodyStatements;
+    ScopedVariables bodyVariables;
+    Function() {};
+    Function(std::string name,
+             Tokenizer::MainToken type,
+             ArgTypeArray argTypes = {},
+             TokenArray argNames = {}) : name(name), type(type), argTypes(argTypes), argNames(argNames) {}
+
     inline void print() {
         printf("Found Function: '%s' as '%s'\n", name.c_str(), Tokenizer::tokenToString(type).c_str());
         for (int i = 0; i < argTypes.size(); i++) {
@@ -71,8 +91,9 @@ public:
             printf("]\n");
         }
         printf("{\n");
-        for (auto& i : body)
-            printf("  %s  ", i.tokenData.c_str());
+        // TODO: Print Inside Of Function
+        //for (auto& i : body)
+        //printf("  %s  ", i.tokenData.c_str());
         printf("\n}\n");
     }
 };
@@ -83,13 +104,13 @@ public:
     std::map<std::string, uint32_t> funcIndex;
     std::vector<Function> functions;
 
-    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames, std::vector<Tokenizer::Token> body) {
+    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames) {
         uint32_t index = funcCount++;
         funcIndex.emplace(name, index);
-        functions.push_back({name, type, argTypes, argNames, body});
+        functions.push_back({name, type, argTypes, argNames});
     }
     void newFunction(Function function) {
-        newFunction(function.name, function.type, function.argTypes, function.argNames, function.body);
+        newFunction(function.name, function.type, function.argTypes, function.argNames);
     }
     Duople<bool,Function> getFunction(std::string name) {
         if (!funcIndex.contains(name)) return {false, {}};
@@ -97,20 +118,10 @@ public:
     }
 };
 
-struct ScopedStatements {
-    std::vector<std::vector<Tokenizer::Token>> statements;
-    void newStatement(std::vector<Tokenizer::Token> statement) {
-        statements.push_back(statement);
-    }
-};
-
-
 struct Scope {
     ScopedFunctions functions;
     ScopedVariables variables;
     ScopedStatements statements;
-    // Use If I Ever Get To This Point
-    //Scope* childScope = nullptr;
 };
 
 
@@ -184,12 +195,12 @@ inline Duople<bool, Variable> expectVariable();
 
 class DataStage {
 private:
-    void run(std::vector<Tokenizer::Token> tokens);
-    void run(Tokenizer tokenizer);
+    Scope run(std::vector<Tokenizer::Token> tokens);
+    Scope run(Tokenizer tokenizer);
 
     bool expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected);
 public:
-    Scope scope;
+    Scope globalScope;
 
     DataStage(std::vector<Tokenizer::Token> tokens);
     DataStage(Tokenizer tokenizer);
