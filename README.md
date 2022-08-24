@@ -14,6 +14,7 @@
 - Code Generation
 - Compile Time Checks
 - Abstract Value Evaluater
+- Scope Evaluation (i.e. Evaluate Statements Inside Of Function Bodies)
   - Ex:
 ```C
 (1,2,3,(1..10)..20+1)
