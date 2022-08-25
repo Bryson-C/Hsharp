@@ -8,19 +8,17 @@ DataStage::DataStage(std::vector<Tokenizer::Token> tokens) { globalScope = run(t
 DataStage::DataStage(Tokenizer tokenizer) { globalScope = run(tokenizer); }
 DataStage::~DataStage() {
     for (auto& var : globalScope.variables.variables) {
-        var.print();
+        //var.print();
     }
     for (auto& func : globalScope.functions.functions) {
-        func.print();
+        //func.print();
+    }
+    for (auto& stmt : globalScope.statements.statements) {
+        // Print Statement
     }
 }
 
-bool DataStage::expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected) {
-    for (uint32_t iter = 0; auto& token : tokens) {
-        if (!isAny(token.token, expected[iter])) return false;
-    }
-    return true;
-}
+
 
 Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
     bool LOG_UNHANDLED_RESULT = false;
@@ -41,8 +39,9 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
             var.type = tokens[i].token;
             func.type = tokens[i].token;
             i++;
-            if (tokens[i].token != TokenType::NAMED)
-                std::cerr << "Named String '" << tokens[i].tokenData << "' Does Not Comply With DataStage\n";
+
+            if (tokens[i].token != TokenType::NAMED) std::cerr << "Named String '" << tokens[i].tokenData << "' Does Not Comply With DataStage\n";
+
             var.name = tokens[i].tokenData;
             func.name = tokens[i].tokenData;
             i++;
@@ -168,8 +167,9 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 }
                 if (!funcBody.empty()) {
                     auto insides = run(funcBody);
-                    func.bodyStatements = insides.statements;
-                    func.bodyVariables = insides.variables;
+                    //func.bodyStatements = insides.statements;
+                    //func.bodyVariables = insides.variables;
+                    printf("{ \n\t%s\n}\n In Function -- %s\n",Generator::WriteScope(insides).c_str(), func.name.c_str());
                 }
 
                 scope.functions.newFunction(func);
@@ -201,8 +201,123 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 fprintf(stderr, "%s Unknown DataStage Case: '%s'\n", tokens[i].filePosition.errorString().c_str(), tokens[i].tokenData.c_str());
         }
     }
+
     return scope;
 }
 Scope DataStage::run(Tokenizer tokenizer) {
     return run(tokenizer.getTokens());
 }
+
+void DataStage::write(std::ofstream &outfile) {
+    outfile << Generator::WriteScope(globalScope);
+}
+
+
+std::string Generator::WriteStatement(Scope& scope, std::vector<Tokenizer::Token> tokens) {
+    std::string stmt;
+    for (int i = 0; i < tokens.size(); i++) {
+        if (tokens[i].token == Tokenizer::MainToken::VARIABLE_CALL) {
+            auto variable = scope.variables.getVariable(tokens[i].tokenData).two;
+            stmt += variable.name;
+            i++;
+            if (tokens[i].token == Tokenizer::MainToken::EQUALS) {
+                // TODO: Actually Handle Data Given In File
+                while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                    if (tokens[i].token == Tokenizer::MainToken::OPEN_BRACKET) { stmt += "{"; i++; continue; }
+                    else if (tokens[i].token == Tokenizer::MainToken::CLOSE_BRACKET) { stmt += "}"; i++; continue; }
+                    else stmt += tokens[i].tokenData;
+                    i++;
+                }
+            } else {
+                fprintf(stderr,"Applying Unknown Operation To Variable OP: '%s'\n", tokens[i].tokenData.c_str());
+            }
+            stmt += ";\n";
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::FUNCTION_CALL) {
+            auto function = scope.functions.getFunction(tokens[i].tokenData).two;
+            stmt += function.name;
+            stmt += "(";
+            while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                stmt += tokens[i].tokenData;
+                i++;
+            }
+            stmt += ")";
+            stmt += ";\n";
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
+            stmt += "\n";
+        }
+        else {
+            stmt += tokens[i].tokenData;
+            i++;
+            continue;
+        }
+    }
+    return stmt;
+}
+
+
+// TODO: Write Rest Of Function
+std::string Generator::WriteFunction(Scope& scope, Function function) {
+    std::string fn;
+    for (int iter = 0; auto& types : function.argTypes) {
+        if (types.size() > 1) fn += "// TODO: Add Support For Multiple Types In To Argument_" + std::to_string(iter) + "\n";
+        iter++;
+    }
+    fn += Tokenizer::typeToString(function.type) + " ";
+    fn += function.name + "(";
+    for (int i = 0; i < function.argNames.size(); i++) {
+        fn += Tokenizer::typeToString(function.argTypes[i][0]) + " ";
+        fn += function.argNames[i].tokenData;
+        if (i != function.argNames.size()-1) fn += ", ";
+    }
+    fn += ")";
+    if (function.bodyVariables.variables.size() > 0 || function.bodyStatements.statements.size() > 0) fn += " {";
+    if (!function.bodyVariables.variables.empty())
+        for (auto& var : function.bodyVariables.variables)
+            fn += WriteVariable(scope, var);
+    if (!function.bodyStatements.statements.empty())
+        for (auto& statement : function.bodyStatements.statements)
+            fn += WriteStatement(scope, statement);
+    if (function.bodyVariables.variables.size() > 0 || function.bodyStatements.statements.size() > 0) fn += "}\n";
+    else fn += ";\n";
+
+    return fn;
+}
+
+std::string Generator::WriteVariable(Scope& scope, Variable variable) {
+    std::string var;
+    var += Tokenizer::typeToString(variable.type) + " ";
+    var += variable.name;
+    var += ((variable.initializer.size() > 1) ? "["+std::to_string(variable.initializer.size())+"]" : "");
+    if (variable.initializer.empty()) {
+        var += ";\n";
+        return var;
+    }
+    else {
+        var += " = ";
+    }
+    var += ((variable.initializer.size() > 1) ? "{" : "");
+    for (int iter = 0; auto& i : variable.initializer) {
+        var += std::to_string(i);
+        if (iter != variable.initializer.size()-1) var += ", ";
+        iter++;
+    }
+    var += ((variable.initializer.size() > 1) ? "};\n" : ";\n");
+    return var;
+}
+
+std::string Generator::WriteScope(Scope &scope) {
+    std::string str;
+    for (auto& fn : scope.functions.functions) {
+        str += WriteFunction(scope, fn);
+    }
+    for (auto& var : scope.variables.variables) {
+        str += WriteVariable(scope, var);
+    }
+    for (auto& stmt : scope.statements.statements) {
+        str += WriteStatement(scope, stmt);
+    }
+    return str;
+}
+

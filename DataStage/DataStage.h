@@ -124,6 +124,12 @@ struct Scope {
     ScopedStatements statements;
 };
 
+inline bool expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected) {
+    for (uint32_t iter = 0; auto& token : tokens) {
+        if (!isAny(token.token, expected[iter])) return false;
+    }
+    return true;
+}
 
 inline std::vector<int64_t> GetValues(std::vector<Tokenizer::Token> tokens) {
     for (int i = 0; i < tokens.size(); i++) {
@@ -193,12 +199,40 @@ inline Duople<bool, Function> expectFunction();
 inline Duople<bool, Variable> expectVariable();
 */
 
+
+namespace Generator {
+    std::string WriteStatement(Scope &scope, std::vector<Tokenizer::Token> tokens);
+    std::string WriteFunction(Scope &scope, Function function);
+    std::string WriteVariable(Scope &scope, Variable variable);
+    std::string WriteScope(Scope& scope);
+}
+namespace Gather {
+    inline std::vector<Tokenizer::Token> gatherUntil(std::vector<Tokenizer::Token>& tokens, int& offset, bool (*comp)(Tokenizer::Token)) {
+        int& i = offset;
+        std::vector<Tokenizer::Token> buffer;
+        while (!comp(tokens[i])) {
+            buffer.push_back(tokens[i++]);
+        }
+        buffer.push_back(tokens[i]);
+        i++;
+        return buffer;
+    }
+    inline Triple<bool, Tokenizer::Token, Tokenizer::Token> gatherTypeAndName(std::vector<Tokenizer::Token>& tokens, int& offset) {
+        Triple<bool, Tokenizer::Token, Tokenizer::Token> ret;
+        if (expects(tokens, offset, {{Tokenizer::MainToken::INT_TYPE, Tokenizer::MainToken::STRING_TYPE}, {Tokenizer::MainToken::NAMED}})) {
+            ret = {true, tokens[offset-2], tokens[offset+1]};
+            offset += 2;
+        } else {
+            ret = {false, {}, {}};
+        }
+        return ret;
+    }
+}
+
 class DataStage {
 private:
     Scope run(std::vector<Tokenizer::Token> tokens);
     Scope run(Tokenizer tokenizer);
-
-    bool expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected);
 public:
     Scope globalScope;
 
@@ -206,6 +240,7 @@ public:
     DataStage(Tokenizer tokenizer);
     ~DataStage();
 
+    void write(std::ofstream& outfile);
 /*
     [[deprecated("Using Tokenization Now, Therefore Using Strings Is Not Helpful")]]inline void run(std::vector<std::string>& wordBuffer) {
         for (int i = 0; i < wordBuffer.size(); i++) {

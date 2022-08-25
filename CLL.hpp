@@ -51,6 +51,12 @@ struct Duople {
     DataType1 one;
     DataType2 two;
 };
+template<typename DataType1, typename DataType2, typename DataType3>
+struct Triple {
+    DataType1 one;
+    DataType2 two;
+    DataType3 three;
+};
 
 
 inline Duople<bool, int64_t> isDigit(std::string string) {
