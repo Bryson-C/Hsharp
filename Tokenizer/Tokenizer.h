@@ -96,6 +96,7 @@ public:
         std::string tokenData;
         Parser::FilePosition filePosition;
         std::string tokenAsString() { return tokenToString(token); }
+        inline void print() { std::cout << tokenData << " as '" << tokenToString(token) << "'\n"; }
     };
 private:
 
@@ -147,14 +148,8 @@ public:
 
     std::vector<Token> getTokens();
 
-    static inline bool isOperation(Token& token) {
-        return isAny(token.token, {MainToken::OP_ADDITION, MainToken::OP_SUBTRACTION,
-                                       MainToken::OP_DIVISION, MainToken::OP_MULTIPLICATION,
-                                       MainToken::OP_MODULUS, MainToken::OP_EXPONENTIAL, MainToken::OP_RANGE});
-    }
-    static inline bool isVariableType(Token& token) {
-        return isAny(token.token, {MainToken::INT_TYPE, MainToken::STRING_TYPE});
-    }
+    static inline bool isOperation(Token& token) { return isAny(token.token, {MainToken::OP_ADDITION, MainToken::OP_SUBTRACTION, MainToken::OP_DIVISION, MainToken::OP_MULTIPLICATION, MainToken::OP_MODULUS, MainToken::OP_EXPONENTIAL, MainToken::OP_RANGE}); }
+    static inline bool isVariableType(Token& token) { return isAny(token.token, {MainToken::INT_TYPE, MainToken::STRING_TYPE}); }
 
     static inline std::string typeToString(MainToken token) {
         switch (token) {
@@ -179,27 +174,50 @@ public:
 
 
 
-struct ParsedType {
+template<typename TokenType>
+class DynamicTokenizer {
 private:
-    Tokenizer::MainToken typeOf;
+    std::vector<Duople<TokenType, Parser::ParsedString>> tokens;
 public:
-    ParsedType() {}
-    ParsedType(Tokenizer::MainToken token) {
-        typeOf = token;
-    }
-    ParsedType(std::string name) {
-        typeOf = Tokenizer::stringToType(name);
-    }
-    inline std::string getAsString() {
-        switch (typeOf) {
-            case Tokenizer::MainToken::INT_TYPE: return "Int";
-            case Tokenizer::MainToken::STRING_TYPE: return "String";
-            default: return "Unknown";
+    Duople<bool, std::string> (*tokenToString)(TokenType);
+    Duople<bool, TokenType> (*stringToToken)(std::string);
+    Duople<std::vector<TokenType>, TokenType> isVarType;
+
+    inline void run(Parser& parser) {
+        for (int i = 0; i < parser.getWordBuffer().size(); i++) {
+            auto current = parser.getWordBuffer()[i];
+            auto tokenResult = stringToToken(current.str);
+            if (!tokenResult.one) {
+                std::cerr << current.errorString() << "Unhandled Token '" << current.str << "', Consider Adding A String To Token And Token To String Conversion To DynamicTokenizer::tokenToString() and DynamicTokenizer::stringToToken()\n";
+            } else {
+                tokens.emplace_back(tokenResult.two, current);
+                if (isAny(tokenResult.two, isVarType.one) && i < parser.getWordBuffer().size()-1) {
+                    tokens.emplace_back(isVarType.two, parser.getWordBuffer()[i+1]);
+                    i++;
+                }
+            }
         }
     }
-    inline Tokenizer::MainToken getAsToken() {
-        return typeOf;
+
+    inline std::vector<TokenType> getTokens() { return tokens; }
+    inline void printTokens(bool printData = false) {
+        for (auto& tok : tokens)
+            std::cout <<
+                ((printData) ? "'" + tok.two.str + "'  as  " : " ")
+                << "'" << tokenToString(tok.one).two << "'\n";
     }
+
 };
+
+
+
+
+
+
+
+
+
+
+
 
 #endif //CLL_TOKENIZER_H

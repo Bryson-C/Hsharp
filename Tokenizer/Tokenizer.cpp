@@ -41,9 +41,9 @@ Tokenizer::Tokenizer(std::vector<Parser::ParsedString> parsedArray) {
     }
 }
 Tokenizer::Tokenizer(Parser parser) {
-    *this = Tokenizer(parser.getWordBuffer());
+    auto buffer = parser.getWordBuffer();
+    *this = Tokenizer(buffer);
 }
 
-std::vector<Tokenizer::Token> Tokenizer::getTokens() {
-    return m_Tokens;
-};
+std::vector<Tokenizer::Token> Tokenizer::getTokens() { return m_Tokens; };
+
