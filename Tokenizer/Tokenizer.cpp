@@ -5,8 +5,26 @@
 #include "Tokenizer.h"
 
 Tokenizer::Tokenizer(std::vector<Parser::ParsedString> parsedArray) {
-    for (auto& i : parsedArray) {
+    std::string volatileString;
+    Parser::FilePosition volatilePos;
+    for (bool recordVolatile = false; auto& i : parsedArray) {
         auto validTokenObject = parseStringToToken(i);
+
+        if (validTokenObject.one && validTokenObject.two.token == MainToken::VOLATILE_OPEN) {
+            recordVolatile = true;
+            volatilePos = validTokenObject.two.filePosition;
+            continue;
+        }
+        else if (validTokenObject.one && validTokenObject.two.token == MainToken::VOLATILE_CLOSE) {
+            m_Tokens.push_back({MainToken::VOLATILE_STATEMENT, volatileString, volatilePos});
+            recordVolatile = false;
+            volatileString.clear();
+            continue;
+        }
+        if (recordVolatile) {
+            volatileString += validTokenObject.two.tokenData + " ";
+            continue;
+        }
 
         if (validTokenObject.one) {
             m_Tokens.push_back({validTokenObject.two.token, validTokenObject.two.tokenData, i.filePosition});

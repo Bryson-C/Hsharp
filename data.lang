@@ -8,11 +8,12 @@ Int generic[Int | String a, Int | String b];
 
 Int noargs[];
 
+Int cc;
 
 Int main[] {
 
     Int a = Sub[10, 20];
     noargs[];
     Add[10,20];
-
+    return 0;
 }

@@ -80,6 +80,13 @@ public:
              Tokenizer::MainToken type,
              ArgTypeArray argTypes = {},
              TokenArray argNames = {}) : name(name), type(type), argTypes(argTypes), argNames(argNames) {}
+    Function(std::string name,
+             Tokenizer::MainToken type,
+             ArgTypeArray argTypes = {},
+             TokenArray argNames = {},
+             ScopedStatements bodyStatements = {},
+             ScopedVariables bodyVariables = {}) : name(name), type(type), argTypes(argTypes), argNames(argNames),
+                                                   bodyStatements(bodyStatements), bodyVariables(bodyVariables) {}
 
     inline void print() {
         printf("Found Function: '%s' as '%s'\n", name.c_str(), Tokenizer::tokenToString(type).c_str());
@@ -104,13 +111,13 @@ public:
     std::map<std::string, uint32_t> funcIndex;
     std::vector<Function> functions;
 
-    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames) {
+    void newFunction(std::string name, Tokenizer::MainToken type, std::vector<std::vector<Tokenizer::Token>> argTypes, std::vector<Tokenizer::Token> argNames, ScopedStatements bodyStatements = {}, ScopedVariables bodyVariables = {}) {
         uint32_t index = funcCount++;
         funcIndex.emplace(name, index);
-        functions.push_back({name, type, argTypes, argNames});
+        functions.push_back({name, type, argTypes, argNames, bodyStatements , bodyVariables});
     }
     void newFunction(Function function) {
-        newFunction(function.name, function.type, function.argTypes, function.argNames);
+        newFunction(function.name, function.type, function.argTypes, function.argNames, function.bodyStatements, function.bodyVariables);
     }
     Duople<bool,Function> getFunction(std::string name) {
         if (!funcIndex.contains(name)) return {false, {}};
@@ -125,8 +132,8 @@ struct Scope {
 };
 
 inline bool expects(std::vector<Tokenizer::Token> tokens, int index, std::vector<std::vector<Tokenizer::MainToken>> expected) {
-    for (uint32_t iter = 0; auto& token : tokens) {
-        if (!isAny(token.token, expected[iter])) return false;
+    for (uint32_t i = index; i < expected.size(); i++) {
+        if (!isAny(tokens[i].token, expected[i])) return false;
     }
     return true;
 }
@@ -220,9 +227,11 @@ namespace Gather {
     inline Triple<bool, Tokenizer::Token, Tokenizer::Token> gatherTypeAndName(std::vector<Tokenizer::Token>& tokens, int& offset) {
         Triple<bool, Tokenizer::Token, Tokenizer::Token> ret;
         if (expects(tokens, offset, {{Tokenizer::MainToken::INT_TYPE, Tokenizer::MainToken::STRING_TYPE}, {Tokenizer::MainToken::NAMED}})) {
-            ret = {true, tokens[offset-2], tokens[offset+1]};
+            ret = {true, tokens[offset], tokens[offset+1]};
             offset += 2;
         } else {
+            if (!Tokenizer::isVariableType(tokens[offset])) std::cerr << tokens[offset].filePosition.errorString() << "Expected Type\n";
+            if (tokens[offset].token != Tokenizer::MainToken::NAMED) std::cerr << tokens[offset].filePosition.errorString() << "Expected Name\n";
             ret = {false, {}, {}};
         }
         return ret;
@@ -236,8 +245,8 @@ private:
 public:
     Scope globalScope;
 
-    DataStage(std::vector<Tokenizer::Token> tokens);
-    DataStage(Tokenizer tokenizer);
+    DataStage(std::vector<Tokenizer::Token>& tokens);
+    DataStage(Tokenizer& tokenizer);
     ~DataStage();
 
     void write(std::ofstream& outfile);

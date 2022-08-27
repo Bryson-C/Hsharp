@@ -10,6 +10,7 @@
 #include "../Parser/Parser.h"
 #include "../CLL.hpp"
 
+
 class Tokenizer {
 public:
     enum class MainToken {
@@ -22,8 +23,8 @@ public:
         INTEGER,
         STRING,
 
-        FUNCTION_CALL,
         VARIABLE_CALL,
+        FUNCTION_CALL,
 
         NEW_LINE,
         TAB,
@@ -38,6 +39,9 @@ public:
         BIG_ARROW,
         SMALL_ARROW,
         RETURN,
+        VOLATILE_OPEN,
+        VOLATILE_CLOSE,
+        VOLATILE_STATEMENT,
 
         OP_ADDITION,
         OP_SUBTRACTION,
@@ -58,8 +62,8 @@ public:
             case MainToken::NAMED: return "Custom_Named_Token";
             case MainToken::INTEGER: return "Integer";
             case MainToken::STRING: return "String";
-            case MainToken::FUNCTION_CALL: return "Function_Call";
-            case MainToken::VARIABLE_CALL: return "Variable_Call";
+            case MainToken::VARIABLE_CALL: return "";
+            case MainToken::FUNCTION_CALL: return "";
             case MainToken::NEW_LINE: return "New_Line";
             case MainToken::TAB: return "Tab";
             case MainToken::OPEN_BRACE: return "[";
@@ -71,7 +75,10 @@ public:
             case MainToken::COMMA: return ",";
             case MainToken::BIG_ARROW: return "=>";
             case MainToken::SMALL_ARROW: return "->";
-            case MainToken::RETURN: return "return";
+            case MainToken::RETURN: return "Return";
+            case MainToken::VOLATILE_OPEN: return "Volatile_Start";
+            case MainToken::VOLATILE_CLOSE: return "Volatile_End";
+            case MainToken::VOLATILE_STATEMENT: return "Volatile_Statement";
             case MainToken::OP_ADDITION: return "+";
             case MainToken::OP_SUBTRACTION: return "-";
             case MainToken::OP_DIVISION: return "/";
@@ -88,7 +95,7 @@ public:
         MainToken token;
         std::string tokenData;
         Parser::FilePosition filePosition;
-        std::string asString() { return tokenToString(token); }
+        std::string tokenAsString() { return tokenToString(token); }
     };
 private:
 
@@ -118,6 +125,8 @@ private:
             {"..", MainToken::OP_RANGE},
             {"&", MainToken::OP_CONCAT},
             {"|", MainToken::OP_OTHER},
+            {"[[", MainToken::VOLATILE_OPEN},
+            {"]]", MainToken::VOLATILE_CLOSE},
     };
 
     Duople<bool, Token> parseStringToToken(Parser::ParsedString string) {
@@ -138,11 +147,15 @@ public:
 
     std::vector<Token> getTokens();
 
-    static inline bool isOperation(Token token) {
+    static inline bool isOperation(Token& token) {
         return isAny(token.token, {MainToken::OP_ADDITION, MainToken::OP_SUBTRACTION,
                                        MainToken::OP_DIVISION, MainToken::OP_MULTIPLICATION,
                                        MainToken::OP_MODULUS, MainToken::OP_EXPONENTIAL, MainToken::OP_RANGE});
     }
+    static inline bool isVariableType(Token& token) {
+        return isAny(token.token, {MainToken::INT_TYPE, MainToken::STRING_TYPE});
+    }
+
     static inline std::string typeToString(MainToken token) {
         switch (token) {
             case Tokenizer::MainToken::INT_TYPE: return "long long int";
@@ -150,10 +163,43 @@ public:
         }
         return "";
     }
+
     static inline std::string typeToString(Token token) {
         return typeToString(token.token);
     }
+
+    static inline MainToken stringToType(std::string name) {
+        std::string type;
+        for (auto& chr : name) type += tolower(chr);
+        if (type == "int") return MainToken::INT_TYPE;
+        else if (type == "string") return MainToken::STRING_TYPE;
+        return MainToken::Unknown;
+    }
 };
 
+
+
+struct ParsedType {
+private:
+    Tokenizer::MainToken typeOf;
+public:
+    ParsedType() {}
+    ParsedType(Tokenizer::MainToken token) {
+        typeOf = token;
+    }
+    ParsedType(std::string name) {
+        typeOf = Tokenizer::stringToType(name);
+    }
+    inline std::string getAsString() {
+        switch (typeOf) {
+            case Tokenizer::MainToken::INT_TYPE: return "Int";
+            case Tokenizer::MainToken::STRING_TYPE: return "String";
+            default: return "Unknown";
+        }
+    }
+    inline Tokenizer::MainToken getAsToken() {
+        return typeOf;
+    }
+};
 
 #endif //CLL_TOKENIZER_H

@@ -4,19 +4,20 @@
 
 #include "DataStage.h"
 
-DataStage::DataStage(std::vector<Tokenizer::Token> tokens) { globalScope = run(tokens); }
-DataStage::DataStage(Tokenizer tokenizer) { globalScope = run(tokenizer); }
+DataStage::DataStage(std::vector<Tokenizer::Token>& tokens) { globalScope = run(tokens); }
+DataStage::DataStage(Tokenizer& tokenizer) { globalScope = run(tokenizer); }
 DataStage::~DataStage() {
     for (auto& var : globalScope.variables.variables) {
-        //var.print();
+        var.print();
     }
     for (auto& func : globalScope.functions.functions) {
-        //func.print();
+        func.print();
     }
     for (auto& stmt : globalScope.statements.statements) {
         // Print Statement
     }
 }
+
 
 
 
@@ -29,60 +30,38 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
     for (int i = 0; i < tokens.size(); i++) {
         Variable var;
         Function func;
+
         if (isAny(tokens[i].token, {TokenType::INT_TYPE})) {
             // Checks If Vector Has
             // 1. A Type (Which It Should)
             // 2. A Name
             // 3. Ending Statement (Either `;` Or A Value)
-            //expects(tokens, i, {{TokenType::INT_TYPE}, {TokenType::NAMED}, {TokenType::SEMICOLON, TokenType::EQUALS, TokenType::OPEN_BRACKET}});
 
-            var.type = tokens[i].token;
-            func.type = tokens[i].token;
-            i++;
+            var.type = func.type = tokens[i++].token;
 
             if (tokens[i].token != TokenType::NAMED) std::cerr << "Named String '" << tokens[i].tokenData << "' Does Not Comply With DataStage\n";
 
-            var.name = tokens[i].tokenData;
-            func.name = tokens[i].tokenData;
-            i++;
+            var.name = func.name = tokens[i++].tokenData;
+
             // A Semi-Colon Indicates That The Data Must Be A Uninitialized Variable
-            if (tokens[i].token == TokenType::SEMICOLON) {
-                var.initializer = {};
-                scope.variables.newVariable(var);
-                continue;
-            }
+            if (tokens[i].token == TokenType::SEMICOLON) { scope.variables.newVariable(var); continue; }
+
             // An Equals Means That The Data Is An Initialized Variable
             else if (tokens[i].token == TokenType::EQUALS) {
-                bool usesBrackets = false;
-                if (tokens[i+1].token == TokenType::OPEN_BRACKET) {
-                    usesBrackets = true;
-                    i++;
-                } else if (tokens[i+1].token == TokenType::NAMED) {
-                    i++;
-                    usesBrackets = false;
+                i++;
+                std::vector<Tokenizer::Token> initializer;
+                while (tokens[i].token != TokenType::SEMICOLON) {
 
                     auto functionResult = scope.functions.getFunction(tokens[i].tokenData);
                     auto variableResult = scope.variables.getVariable(tokens[i].tokenData);
 
-                    // If It Is A Function
                     if (functionResult.one) {
-                        //auto function = functionResult.two;
-                        // I Dont Really Know What To Do Here (What To Do When Var Is Initialized With Function?)
-                    } else {
-                        std::cerr << tokens[i].filePosition.errorString() << "Absolutely No Function Of The Name '" << tokens[i].tokenData << "' Exists\n";
+                        std::cerr << "Cant Cope!\n";
                     }
-
-                }
-                i++;
-
-                std::vector<Tokenizer::Token> initializer;
-                while ((usesBrackets)?(tokens[i].token != TokenType::CLOSE_BRACKET) : (tokens[i].token != TokenType::SEMICOLON)) {
-                    if (tokens[i].token == TokenType::COMMA) {
-                        if (!usesBrackets) std::cerr << tokens[i].filePosition.errorString() << "Arrays Need '[' And ']' For Open And Closing\n";
-                        i++;
-                        continue;
+                    else if (variableResult.one) {
+                        for (auto& ints : variableResult.two.initializer)
+                            initializer.push_back({TokenType::INTEGER, std::to_string(ints), tokens[i].filePosition});
                     }
-
                     else if (Tokenizer::isOperation(tokens[i+1])) {
                         i++;
                         std::vector<int64_t> left, right;
@@ -165,11 +144,11 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
                     }
                     funcBody.push_back(tokens[i]);
                 }
+
                 if (!funcBody.empty()) {
                     auto insides = run(funcBody);
-                    //func.bodyStatements = insides.statements;
-                    //func.bodyVariables = insides.variables;
-                    printf("{ \n\t%s\n}\n In Function -- %s\n",Generator::WriteScope(insides).c_str(), func.name.c_str());
+                    func.bodyStatements = insides.statements;
+                    func.bodyVariables = insides.variables;
                 }
 
                 scope.functions.newFunction(func);
@@ -180,10 +159,9 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
             auto function = scope.functions.getFunction(tokens[i].tokenData);
             auto variable = scope.variables.getVariable(tokens[i].tokenData);
 
-            if (variable.one && function.one)
-                std::cerr << tokens[i].filePosition.errorString()
-                          << "Name Collision Of Function '" << function.two.name
-                          << "' And Variable '" << variable.two.name << "'\n";
+            // If A Name Collision Occurs
+            if (variable.one && function.one) std::cerr << tokens[i].filePosition.errorString() << "Name Collision Of Function '" << function.two.name << "' And Variable '" << variable.two.name << "'\n";
+
             else if (function.one) tokens[i].token = TokenType::FUNCTION_CALL;
             else if (variable.one) tokens[i].token = TokenType::VARIABLE_CALL;
 
@@ -192,6 +170,22 @@ Scope DataStage::run(std::vector<Tokenizer::Token> tokens) {
                 stmt.push_back(tokens[i]);
                 i++;
             } while (tokens[i].token != TokenType::SEMICOLON);
+            stmt.push_back(tokens[i]);
+            scope.statements.newStatement(stmt);
+            i++;
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::VOLATILE_STATEMENT) {
+            std::vector<Tokenizer::Token> stmt;
+            stmt.push_back(tokens[i]);
+            scope.statements.newStatement(stmt);
+        }
+        else if (tokens[i].token == TokenType::RETURN) {
+            std::vector<Tokenizer::Token> stmt;
+            tokens[i].tokenData = "return ";
+            while (tokens[i].token != TokenType::SEMICOLON) {
+                stmt.push_back(tokens[i]);
+                i++;
+            }
             stmt.push_back(tokens[i]);
             scope.statements.newStatement(stmt);
             i++;
@@ -209,7 +203,9 @@ Scope DataStage::run(Tokenizer tokenizer) {
 }
 
 void DataStage::write(std::ofstream &outfile) {
-    outfile << Generator::WriteScope(globalScope);
+    auto data = Generator::WriteScope(globalScope);
+    printf("Data: %s\n", data.c_str());
+    outfile << data;
 }
 
 
@@ -246,10 +242,14 @@ std::string Generator::WriteStatement(Scope& scope, std::vector<Tokenizer::Token
         }
         else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
             stmt += "\n";
+            continue;
+        }
+        else if (tokens[i].token == Tokenizer::MainToken::VOLATILE_STATEMENT) {
+            stmt += tokens[i].tokenData;
+            continue;
         }
         else {
             stmt += tokens[i].tokenData;
-            i++;
             continue;
         }
     }
@@ -259,6 +259,7 @@ std::string Generator::WriteStatement(Scope& scope, std::vector<Tokenizer::Token
 
 // TODO: Write Rest Of Function
 std::string Generator::WriteFunction(Scope& scope, Function function) {
+
     std::string fn;
     for (int iter = 0; auto& types : function.argTypes) {
         if (types.size() > 1) fn += "// TODO: Add Support For Multiple Types In To Argument_" + std::to_string(iter) + "\n";
@@ -272,14 +273,13 @@ std::string Generator::WriteFunction(Scope& scope, Function function) {
         if (i != function.argNames.size()-1) fn += ", ";
     }
     fn += ")";
-    if (function.bodyVariables.variables.size() > 0 || function.bodyStatements.statements.size() > 0) fn += " {";
-    if (!function.bodyVariables.variables.empty())
-        for (auto& var : function.bodyVariables.variables)
-            fn += WriteVariable(scope, var);
-    if (!function.bodyStatements.statements.empty())
-        for (auto& statement : function.bodyStatements.statements)
-            fn += WriteStatement(scope, statement);
-    if (function.bodyVariables.variables.size() > 0 || function.bodyStatements.statements.size() > 0) fn += "}\n";
+    if (!function.bodyVariables.variables.empty() || !function.bodyStatements.statements.empty()) {
+        fn += " {";
+        if (function.bodyVariables.variables.size() > 1 || function.bodyStatements.statements.size() > 1) fn += "\n";
+        for (auto &var: function.bodyVariables.variables) fn += WriteVariable(scope, var);
+        for (auto &statement: function.bodyStatements.statements) fn += WriteStatement(scope, statement);
+        fn += "};\n";
+    }
     else fn += ";\n";
 
     return fn;
