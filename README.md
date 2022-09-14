@@ -30,3 +30,6 @@
   - It Activates Before The Tokenizer For Some Reason?
   - Kind Of Hackable (Via Function Pointers)
   - TODO: Make Tokenization Occur Before
+  
+  
+ ### Making A Scala Variant
