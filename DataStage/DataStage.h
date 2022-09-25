@@ -33,6 +33,27 @@ public:
         }
         printf(")\n");
     }
+    inline std::string generate() {
+        std::string var;
+        var += Tokenizer::tokenToString(type);
+        var += name + " ";
+        var += ((initializer.size() > 1) ? "["+std::to_string(initializer.size())+"]" : "");
+        if (initializer.empty()) {
+            var += ";\n";
+            return var;
+        }
+        else {
+            var += " = ";
+        }
+        var += ((initializer.size() > 1) ? "{" : "");
+        for (int iter = 0; auto& i : initializer) {
+            var += std::to_string(i);
+            if (iter != initializer.size()-1) var += ", ";
+            iter++;
+        }
+        var += ((initializer.size() > 1) ? "};\n" : ";\n");
+        return var;
+    }
 };
 struct ScopedVariables {
 private:
@@ -59,6 +80,64 @@ struct ScopedStatements {
     std::vector<std::vector<Tokenizer::Token>> statements;
     void newStatement(std::vector<Tokenizer::Token> statement) {
         statements.push_back(statement);
+    }
+    inline std::string generate(Scope& scope) {
+        /*
+        std::string stmt;
+        for (auto &tokens: statements) {
+            for (int i = 0; i < tokens.size(); i++) {
+                if (tokens[i].token == Tokenizer::MainToken::NAMED) {
+                    auto variable = scope.variables.getVariable(tokens[i].tokenData);
+                    auto function = scope.functions.getFunction(tokens[i].tokenData);
+
+                    if (!variable.one) {
+                        stmt += variable.two.name;
+                        i++;
+                        if (tokens[i].token == Tokenizer::MainToken::EQUALS) {
+                            // TODO: Actually Handle Data Given In File
+                            while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                                switch (tokens[i++].token) {
+                                    case Tokenizer::MainToken::OPEN_BRACKET: {
+                                        stmt += "{";
+                                    }
+                                    case Tokenizer::MainToken::CLOSE_BRACKET: {
+                                        stmt += "}";
+                                    }
+                                    case Tokenizer::MainToken::OPEN_BRACE: {
+                                        stmt += "(";
+                                    }
+                                    case Tokenizer::MainToken::CLOSE_BRACE: {
+                                        stmt += ")";
+                                    }
+                                }
+                            }
+                        }
+                        stmt += ";\n";
+                    } else if (!function.one) {
+                        printf("Calling Function: %s\n", function.two.name.c_str());
+                        stmt += function.two.name;
+                        stmt += "(";
+                        while (tokens[i].token != Tokenizer::MainToken::SEMICOLON) {
+                            stmt += tokens[i].tokenData;
+                            i++;
+                        }
+                        stmt += ")";
+                        stmt += ";\n";
+                    }
+                } else if (tokens[i].token == Tokenizer::MainToken::NEW_LINE) {
+                    stmt += "\n";
+                    continue;
+                } else if (tokens[i].token == Tokenizer::MainToken::VOLATILE_STATEMENT) {
+                    stmt += tokens[i].tokenData;
+                    continue;
+                } else {
+                    stmt += tokens[i].tokenData;
+                    continue;
+                }
+            }
+            return stmt;
+        }*/
+        return "";
     }
 };
 
@@ -102,6 +181,33 @@ public:
         //for (auto& i : body)
         //printf("  %s  ", i.tokenData.c_str());
         printf("\n}\n");
+    }
+    inline std::string generate() {
+
+        std::string fn;
+        for (int iter = 0; auto& types : argTypes) {
+            if (types.size() > 1) fn += "// TODO: Add Support For Multiple Types In To Argument_" + std::to_string(iter) + "\n";
+            iter++;
+        }
+        fn += Tokenizer::typeToString(type) + " ";
+        fn += name + "(";
+        for (int i = 0; i < argNames.size(); i++) {
+            fn += Tokenizer::typeToString(argTypes[i][0]) + " ";
+            fn += argNames[i].tokenData;
+            if (i != argNames.size()-1) fn += ", ";
+        }
+        fn += ")";
+        if (!bodyVariables.variables.empty() || !bodyStatements.statements.empty()) {
+            fn += " {";
+            if (bodyVariables.variables.size() > 1 || bodyStatements.statements.size() > 1) fn += "\n";
+            for (auto &var: bodyVariables.variables) fn += var.generate();
+            // TODO: Generate Statements
+            //fn += bodyStatements.generate();
+            fn += "};\n";
+        }
+        else fn += ";\n";
+
+        return fn;
     }
 };
 struct ScopedFunctions {
@@ -240,8 +346,8 @@ namespace Gather {
 
 class DataStage {
 private:
-    Scope run(std::vector<Tokenizer::Token> tokens);
-    Scope run(Tokenizer tokenizer);
+    Scope run(std::vector<Tokenizer::Token>& tokens);
+    Scope run(Tokenizer& tokenizer);
 public:
     Scope globalScope;
 

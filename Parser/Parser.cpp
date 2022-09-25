@@ -74,6 +74,8 @@
 std::vector<Parser::ParsedString> Parser::parse(std::string path) {
     std::ifstream file(path);
     if (!file.is_open()) { std::cerr << "File '" << path << "' Couldn't Open!\n"; return {}; }
+    auto parentDirectory = std::filesystem::path(path).parent_path();
+
     std::vector<ParsedString> content;
     std::string buffer;
     size_t line = 1;
@@ -175,6 +177,17 @@ std::vector<Parser::ParsedString> Parser::parse(std::string path) {
             auto includePath = content[i+1].str;
             includePath.erase(includePath.begin());
             includePath.erase(includePath.end()-1);
+
+
+
+            if (includePath[0] == '.' && includePath[1] == '/')
+                includePath = includePath.substr(2);
+
+            if (std::filesystem::exists(parentDirectory.string() + "\\" + includePath))
+                includePath = parentDirectory.string() + "\\" + includePath;
+
+            std::cout << "Including: " << includePath << "\n";
+
 
             bool includedAlready = false;
             for (auto& included : m_IncludedFiles) {

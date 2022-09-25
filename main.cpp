@@ -11,52 +11,45 @@
 #include "DataStage/DataStage.h"
 
 
-enum class Token {
-    Int,
-    String,
-    NewLine,
-    Named,
-};
-Duople<bool, std::string> tokenToString(Token token) {
-    switch (token) {
-        case Token::Int: return {true, "Int"};
-        case Token::String: return {true, "String"};
-        case Token::NewLine: return {true, "\\n"};
-        case Token::Named: return {true, "Custom_Named_String"};
-    }
-    return {false,""};
-}
-Duople<bool, Token> stringToToken(std::string str) {
-    if (str == "Int") return {true, Token::Int};
-    else if (str == "String") return {true, Token::String};
-    else if (str == "\\n") return {true, Token::NewLine};
-    // Cannot Be Converted To Therefore it must be left out
-    // Token::Named
-    return {false, {}};
-}
 
 int main() {
 
     std::ofstream output(R"(D:\Languages\CLL\output.c)", std::ios::trunc);
 
-    Parser parser(R"(D:\Languages\CLL\Dynamic.lang)", Parser::Settings::RecordNewLine);
-
-    DynamicTokenizer<Token> tokenizer;
-    tokenizer.stringToToken = stringToToken;
-    tokenizer.tokenToString = tokenToString;
-    tokenizer.isVarType = {{Token::Int, Token::String}, Token::Named};
-    tokenizer.run(parser);
-    tokenizer.printTokens(true);
-
-
-
-/*
+    Parser parser(R"(D:\Languages\CLL\Dynamic.lang)");
     Tokenizer tokenizer(parser);
-    DataStage dataStage(tokenizer);
-    dataStage.write(output);
-*/
+
+    auto tokenGroups = GetTokenGroups(tokenizer);
+    for (auto& i : tokenGroups) i.printGroup();
 
 
+    for (auto& i : tokenGroups) {
+        using TokenType = Tokenizer::MainToken;
+
+        TokenType type;
+        std::string str;
+
+        for (auto& tok : i.tokens) {
+            if (tok.token == TokenType::INT_TYPE) { str += "int "; type = TokenType::INT_TYPE; }
+            if (tok.token == TokenType::STRING_TYPE) { str += "const char* "; type = TokenType::STRING_TYPE;}
+            if (tok.token == TokenType::NAMED) str += tok.tokenData + " ";
+            if (tok.token == TokenType::EQUALS) str += "= ";
+            if (tok.token == TokenType::AUTO_TYPE) type = TokenType::AUTO_TYPE;
+        }
+        std::vector<std::string> initializer;
+        for (auto& init : i.initializer) {
+            if (auto digit = isDigit(init.tokenData); digit.one && type == TokenType::AUTO_TYPE) { str = "int " + str; type = TokenType::INT_TYPE; }
+
+            if (type == TokenType::INT_TYPE && init.token == TokenType::INTEGER) { initializer.push_back(init.tokenData); }
+            else { std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n"; }
+
+            if (type == TokenType::STRING_TYPE && init.token == TokenType::STRING) { initializer.push_back(init.tokenData); }
+            else { std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n"; }
+        }
+        for (auto& )
+        str += ";\n";
+        output << str;
+    }
 
 
     return 0;

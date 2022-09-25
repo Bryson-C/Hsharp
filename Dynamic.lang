@@ -1,2 +1,9 @@
-String thing;
-Int other;
+
+//request "D:\Languages\CLL\Dyn2.lang";
+request "Dyn2.lang";
+
+Int variable = 10;
+Int unvar;
+String str = ["Hello", "World"];
+variable;
+

@@ -5,27 +5,8 @@
 #include "Tokenizer.h"
 
 Tokenizer::Tokenizer(std::vector<Parser::ParsedString> parsedArray) {
-    std::string volatileString;
-    Parser::FilePosition volatilePos;
-    for (bool recordVolatile = false; auto& i : parsedArray) {
+    for (auto& i : parsedArray) {
         auto validTokenObject = parseStringToToken(i);
-
-        if (validTokenObject.one && validTokenObject.two.token == MainToken::VOLATILE_OPEN) {
-            recordVolatile = true;
-            volatilePos = validTokenObject.two.filePosition;
-            continue;
-        }
-        else if (validTokenObject.one && validTokenObject.two.token == MainToken::VOLATILE_CLOSE) {
-            m_Tokens.push_back({MainToken::VOLATILE_STATEMENT, volatileString, volatilePos});
-            recordVolatile = false;
-            volatileString.clear();
-            continue;
-        }
-        if (recordVolatile) {
-            volatileString += validTokenObject.two.tokenData + " ";
-            continue;
-        }
-
         if (validTokenObject.one) {
             m_Tokens.push_back({validTokenObject.two.token, validTokenObject.two.tokenData, i.filePosition});
 
@@ -46,4 +27,38 @@ Tokenizer::Tokenizer(Parser parser) {
 }
 
 std::vector<Tokenizer::Token> Tokenizer::getTokens() { return m_Tokens; };
+
+
+std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
+    auto tokenList = tokenizer.getTokens();
+
+    std::vector<TokenGroup> statements;
+    TokenGroup group;
+    bool initialized = false, isArray = false;
+
+    for (int i = 0; i < tokenList.size(); i++) {
+        using TokenType = Tokenizer::MainToken;
+
+        if (tokenList[i].token == TokenType::SEMICOLON) {
+            statements.push_back(group);
+            group = TokenGroup();
+            initialized = false;
+            continue;
+        }
+
+        if (tokenList[i].token == TokenType::OPEN_BRACKET || tokenList[i].token == TokenType::CLOSE_BRACKET) { isArray = true; continue; }
+        if (tokenList[i].token == TokenType::COMMA && isArray) { continue; }
+
+        if (initialized)
+            group.initializer.push_back(tokenList[i]);
+        else
+            group.tokens.push_back(tokenList[i]);
+
+        if (tokenList[i].token == TokenType::EQUALS)
+            initialized = true;
+    }
+    if (!group.tokens.empty())
+        statements.push_back(group);
+    return statements;
+}
 

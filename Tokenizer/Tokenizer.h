@@ -11,11 +11,15 @@
 #include "../CLL.hpp"
 
 
+
+
+
 class Tokenizer {
 public:
     enum class MainToken {
         Unknown,
 
+        AUTO_TYPE,
         INT_TYPE,
         STRING_TYPE,
 
@@ -39,9 +43,6 @@ public:
         BIG_ARROW,
         SMALL_ARROW,
         RETURN,
-        VOLATILE_OPEN,
-        VOLATILE_CLOSE,
-        VOLATILE_STATEMENT,
 
         OP_ADDITION,
         OP_SUBTRACTION,
@@ -59,6 +60,7 @@ public:
             case MainToken::Unknown: return "Unknown";
             case MainToken::INT_TYPE: return "Integer_Type";
             case MainToken::STRING_TYPE: return "String_Type";
+            case MainToken::AUTO_TYPE: return "Auto_Type";
             case MainToken::NAMED: return "Custom_Named_Token";
             case MainToken::INTEGER: return "Integer";
             case MainToken::STRING: return "String";
@@ -66,19 +68,16 @@ public:
             case MainToken::FUNCTION_CALL: return "";
             case MainToken::NEW_LINE: return "New_Line";
             case MainToken::TAB: return "Tab";
-            case MainToken::OPEN_BRACE: return "[";
-            case MainToken::CLOSE_BRACE: return "]";
-            case MainToken::OPEN_BRACKET: return "{";
-            case MainToken::CLOSE_BRACKET: return "}";
+            case MainToken::OPEN_BRACE: return "{";
+            case MainToken::CLOSE_BRACE: return "}";
+            case MainToken::OPEN_BRACKET: return "[";
+            case MainToken::CLOSE_BRACKET: return "]";
             case MainToken::SEMICOLON: return ";";
             case MainToken::EQUALS: return "=";
             case MainToken::COMMA: return ",";
             case MainToken::BIG_ARROW: return "=>";
             case MainToken::SMALL_ARROW: return "->";
             case MainToken::RETURN: return "Return";
-            case MainToken::VOLATILE_OPEN: return "Volatile_Start";
-            case MainToken::VOLATILE_CLOSE: return "Volatile_End";
-            case MainToken::VOLATILE_STATEMENT: return "Volatile_Statement";
             case MainToken::OP_ADDITION: return "+";
             case MainToken::OP_SUBTRACTION: return "-";
             case MainToken::OP_DIVISION: return "/";
@@ -102,6 +101,7 @@ private:
 
 
     std::map<std::string, MainToken> m_TokenDictionary {
+            {"Let", MainToken::AUTO_TYPE},
             {"Int", MainToken::INT_TYPE},
             {"String", MainToken::STRING_TYPE},
             {"return", MainToken::RETURN},
@@ -126,8 +126,6 @@ private:
             {"..", MainToken::OP_RANGE},
             {"&", MainToken::OP_CONCAT},
             {"|", MainToken::OP_OTHER},
-            {"[[", MainToken::VOLATILE_OPEN},
-            {"]]", MainToken::VOLATILE_CLOSE},
     };
 
     Duople<bool, Token> parseStringToToken(Parser::ParsedString string) {
@@ -172,24 +170,53 @@ public:
     }
 };
 
+struct TokenGroup {
+    std::vector<Tokenizer::Token> tokens;
+    std::vector<Tokenizer::Token> initializer;
+    void printGroup() {
+        std::cout << " -- NEW GROUP --\n";
+        for (auto& def : tokens) {
+            printf("\t");
+            def.print();
+        }
+
+        std::cout << " -- :: --\n";
+        if (initializer.empty()) printf("\tEMPTY\n");
+
+        for (auto& init : initializer) {
+            printf("\t");
+            init.print();
+        }
+        std::cout << " -- END GROUP --\n\n";
+    }
+};
+
+std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);
+
 
 
 template<typename TokenType>
-class DynamicTokenizer {
+class [[deprecated("Not Very Useful")]] DynamicTokenizer {
 private:
     std::vector<Duople<TokenType, Parser::ParsedString>> tokens;
 public:
     Duople<bool, std::string> (*tokenToString)(TokenType);
     Duople<bool, TokenType> (*stringToToken)(std::string);
     Duople<std::vector<TokenType>, TokenType> isVarType;
+    TokenType digitType, customNamedString;
 
     inline void run(Parser& parser) {
         for (int i = 0; i < parser.getWordBuffer().size(); i++) {
             auto current = parser.getWordBuffer()[i];
             auto tokenResult = stringToToken(current.str);
-            if (!tokenResult.one) {
-                std::cerr << current.errorString() << "Unhandled Token '" << current.str << "', Consider Adding A String To Token And Token To String Conversion To DynamicTokenizer::tokenToString() and DynamicTokenizer::stringToToken()\n";
-            } else {
+            if (auto isdig = isDigit(current.str); isdig.one) {
+                tokens.emplace_back(digitType, current);
+                continue;
+            }
+            else if (!tokenResult.one) {
+                tokens.emplace_back(customNamedString, current);
+            }
+            else {
                 tokens.emplace_back(tokenResult.two, current);
                 if (isAny(tokenResult.two, isVarType.one) && i < parser.getWordBuffer().size()-1) {
                     tokens.emplace_back(isVarType.two, parser.getWordBuffer()[i+1]);
@@ -199,7 +226,7 @@ public:
         }
     }
 
-    inline std::vector<TokenType> getTokens() { return tokens; }
+    inline std::vector<Duople<TokenType, Parser::ParsedString>> getTokens() { return tokens; }
     inline void printTokens(bool printData = false) {
         for (auto& tok : tokens)
             std::cout <<
