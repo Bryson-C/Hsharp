@@ -32,21 +32,55 @@ int main() {
         for (auto& tok : i.tokens) {
             if (tok.token == TokenType::INT_TYPE) { str += "int "; type = TokenType::INT_TYPE; }
             if (tok.token == TokenType::STRING_TYPE) { str += "const char* "; type = TokenType::STRING_TYPE;}
-            if (tok.token == TokenType::NAMED) str += tok.tokenData + " ";
-            if (tok.token == TokenType::EQUALS) str += "= ";
-            if (tok.token == TokenType::AUTO_TYPE) type = TokenType::AUTO_TYPE;
-        }
-        std::vector<std::string> initializer;
-        for (auto& init : i.initializer) {
-            if (auto digit = isDigit(init.tokenData); digit.one && type == TokenType::AUTO_TYPE) { str = "int " + str; type = TokenType::INT_TYPE; }
+            if (tok.token == TokenType::NAMED) str += tok.tokenData;
+            if (tok.token == TokenType::EQUALS) i.initializer.size() > 1 ? str += "[] = " : str += " = ";
+            if (tok.token == TokenType::AUTO_TYPE) {
+                if (!i.initializer.empty()) {
+                    auto digit = isDigit(i.initializer[0].tokenData);
+                    auto string = isString(i.initializer[0].tokenData);
 
-            if (type == TokenType::INT_TYPE && init.token == TokenType::INTEGER) { initializer.push_back(init.tokenData); }
-            else { std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n"; }
+                    if (digit.one)
+                        type = TokenType::INT_TYPE;
+                    else if (string.one)
+                        type = TokenType::STRING_TYPE;
+                    else
+                        type = TokenType :: AUTO_TYPE;
 
-            if (type == TokenType::STRING_TYPE && init.token == TokenType::STRING) { initializer.push_back(init.tokenData); }
-            else { std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n"; }
+                    switch (type) {
+                        case TokenType::INT_TYPE: str = "int " + str; break;
+                        case TokenType::STRING_TYPE: str = "const char* " + str; break;
+                        default: str += "auto "; break;
+                    }
+                }
+            }
         }
-        for (auto& )
+
+        if (i.initializer.empty())
+            str += "/* Unused Variable*/";
+
+        else if (i.initializer.size() == 1)
+            str += i.initializer[0].tokenData;
+
+        else if (i.initializer.size() > 1) {
+            str += "{";
+            for (int iter = 0; auto &init: i.initializer) {
+
+                if (type == TokenType::INT_TYPE && init.token == TokenType::INTEGER)
+                    str += init.tokenData;
+                else
+                    std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n";
+
+                if (type == TokenType::STRING_TYPE && init.token == TokenType::STRING)
+                    str += init.tokenData;
+                else
+                    std::cerr << "Type Conflict From: '" << init.tokenData << "' :\n\tInitializer Type: " << Tokenizer::tokenToString(type) << "  |  Value Type: " << Tokenizer::tokenToString(init.token) << "\n";
+
+                if (iter < i.initializer.size()-1) str += ", ";
+                iter++;
+            }
+            str += "}";
+        }
+
         str += ";\n";
         output << str;
     }
