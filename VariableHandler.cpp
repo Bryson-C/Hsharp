@@ -165,4 +165,3 @@ CLL_OperationHandlerResult<std::vector<int64_t>> CLL_PreformOperation(CLL_Scoped
 }
 
 
-
