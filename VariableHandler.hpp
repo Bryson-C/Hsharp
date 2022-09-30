@@ -270,6 +270,7 @@ inline void CLL_GetVariableValue(CLL_ScopedVariables& variables, std::string nam
 namespace CLL_EXP {
     enum class VariableType {
         NONE,
+        AUTO,
 
         INT8_TYPE,
         INT16_TYPE,
@@ -283,6 +284,21 @@ namespace CLL_EXP {
 
         STRING_TYPE
     };
+    inline std::string getVariableTypeAsString(VariableType type) {
+        switch (type) {
+            case VariableType::NONE: return "None";
+            case VariableType::INT8_TYPE: return "Int8";
+            case VariableType::INT16_TYPE: return "Int16";
+            case VariableType::INT32_TYPE: return "Int32";
+            case VariableType::INT64_TYPE: return "Int64";
+            case VariableType::UINT8_TYPE: return "Uint8";
+            case VariableType::UINT16_TYPE: return "Uint16";
+            case VariableType::UINT32_TYPE: return "Uint32";
+            case VariableType::UINT64_TYPE: return "Uint64";
+            case VariableType::STRING_TYPE: return "String";
+            default: return "";
+        }
+    }
 
     template<typename DataType> struct Range {
     private:
@@ -313,14 +329,13 @@ namespace CLL_EXP {
     class Value {
     private:
         int64_t value;
+        std::string strval;
         VariableType type;
     public:
-        Value(int32_t number) : value(number) {
-            Range<int_least64_t>::GetAsType(INT32_MIN, INT32_MAX);
-        }
-        explicit Value(int64_t number) : value(number) {
-            Range<int_least64_t>::GetAsType(INT64_MIN, INT64_MAX);
-        }
+        Value() {}
+        Value(int32_t number) : value(number), strval(""), type(VariableType::INT32_TYPE) {}
+        explicit Value(int64_t number) : value(number), strval(""), type(VariableType::INT64_TYPE) {}
+        Value(std::string string) : value(0), strval(string), type(VariableType::STRING_TYPE) {}
         friend class Variable;
     };
 
@@ -334,17 +349,80 @@ namespace CLL_EXP {
         Variable(const char* _name) : name(_name), type(VariableType::NONE) {}
         Variable(const char* _name, VariableType _type) : name(_name), type(_type) {}
         Variable(const char* _name, int_fast64_t min, uint_fast64_t max) : name(_name) { type = Range<int_least64_t>::GetAsType(min, max); }
+
+        void setName(std::string str) { name = str; }
+        std::string getName() { return name; }
+        void setType(VariableType _type) { type = _type; }
+        VariableType getType() { return type; }
+
+        // TODO: Check Bounds Of Arguments Compared To min-max Range Type Deduction
+        // TODO: Deal With Type Collisions
         void push(int32_t number) {
             Value v = Value(number);
-            if (type == VariableType::NONE)
-                type = v.type;
+            if (type == VariableType::NONE) type = v.type;
             values.push_back(v);
         }
         void push(int64_t number) {
             Value v = Value((int64_t)number);
-            if (type == VariableType::NONE)
-                type = v.type;
+            if (type == VariableType::NONE) type = v.type;
             values.push_back(v);
+        }
+        void push(std::string string) {
+            Value v = Value(string);
+            if (type == VariableType::NONE) type = v.type;
+            values.push_back(v);
+        }
+        void push(Value val) {
+            values.push_back(val);
+        }
+        std::string generateOutput() {
+            std::string str;
+
+            RESTART_TYPE_EVAL_CASES:
+            switch (type) {
+                case VariableType::NONE:
+                case VariableType::AUTO:
+                {
+                    if (values.empty()) {
+                        std::cerr << "No Type Specified For Variable: " << name << "\n";
+                        break;
+                    } else {
+                        if (!values.empty()) type = values[0].type;
+                        goto RESTART_TYPE_EVAL_CASES;
+                    }
+                }
+
+                case VariableType::INT8_TYPE: { str += "int "; break; }
+                case VariableType::INT16_TYPE: { str += "int "; break; }
+                case VariableType::INT32_TYPE: { str += "int "; break; }
+                case VariableType::INT64_TYPE: { str += "long long int "; break; }
+                case VariableType::UINT8_TYPE: { str += "unsigned int "; break; }
+                case VariableType::UINT16_TYPE: { str += "unsigned int "; break; }
+                case VariableType::UINT32_TYPE: { str += "unsigned int "; break; }
+                case VariableType::UINT64_TYPE: { str += "unsigned long long int "; break; }
+                case VariableType::STRING_TYPE: { str += "const char* "; break; }
+                default: std::cout << "Implement Code Generation For Type: " << (int)type << "\n"; break;
+            }
+            str += name;
+
+            if (values.size() == 1) {
+                str += " = " + ((values[0].type == VariableType::STRING_TYPE) ? values[0].strval : std::to_string(values[0].value) );
+            }
+            else if (values.size() > 1) {
+                str += "[] = {";
+                for (int loop = 0; auto &val: values) {
+                    str += ((type == VariableType::STRING_TYPE) ? val.strval : std::to_string(val.value));
+                    if (loop < values.size() - 1)
+                        str += ", ";
+                    loop++;
+                }
+                if (values.size() > 1) str += "}";
+            }
+
+            if (values.empty()) str += "; /* Warning: Unused Variable */\n";
+            else str += ";\n";
+
+            return str;
         }
     };
 
