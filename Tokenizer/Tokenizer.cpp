@@ -34,7 +34,7 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
 
     std::vector<TokenGroup> statements;
     TokenGroup group;
-    bool initialized = false, isArray = false;
+    bool initialized = false, insideArgList = false;
 
     for (int i = 0; i < tokenList.size(); i++) {
         using TokenType = Tokenizer::MainToken;
@@ -46,16 +46,18 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
             continue;
         }
 
-        if (tokenList[i].token == TokenType::OPEN_BRACKET || tokenList[i].token == TokenType::CLOSE_BRACKET) { isArray = true; continue; }
-        if (tokenList[i].token == TokenType::COMMA && isArray) { continue; }
+        if (tokenList[i].token == TokenType::EQUALS) { initialized = true; continue; }
+        else if (tokenList[i].token == TokenType::COMMA) { continue; }
+
+        if (tokenList[i].token == TokenType::OPEN_BRACKET) { if (!initialized) { insideArgList = true; group.isFunction = true; } continue; }
+        if (tokenList[i].token == TokenType::CLOSE_BRACKET) { if (insideArgList) insideArgList = false; continue; }
 
         if (initialized)
             group.initializer.push_back(tokenList[i]);
+        else if (insideArgList)
+            group.arguments.push_back(tokenList[i]);
         else
             group.tokens.push_back(tokenList[i]);
-
-        if (tokenList[i].token == TokenType::EQUALS)
-            initialized = true;
     }
     if (!group.tokens.empty())
         statements.push_back(group);

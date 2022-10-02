@@ -171,18 +171,27 @@ public:
 };
 
 struct TokenGroup {
+    bool isFunction = false;
     std::vector<Tokenizer::Token> tokens;
     std::vector<Tokenizer::Token> initializer;
+    std::vector<Tokenizer::Token> arguments;
     void printGroup() {
-        std::cout << " -- NEW GROUP --\n";
+        std::cout << " -- NEW GROUP ";
+        if (isFunction) std::cout << "[.FUNCTION.] --\n"; else std::cout << "--\n";
+
         for (auto& def : tokens) {
             printf("\t");
             def.print();
         }
 
-        std::cout << " -- :: --\n";
-        if (initializer.empty()) printf("\tEMPTY\n");
+        std::cout << " -- () --\n";
+        for (auto& arg : arguments) {
+            printf("\t");
+            arg.print();
+        }
 
+
+        std::cout << " -- :: --\n";
         for (auto& init : initializer) {
             printf("\t");
             init.print();

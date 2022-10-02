@@ -15,36 +15,83 @@ int main() {
 
     std::ofstream output(R"(D:\Languages\CLL\output.c)", std::ios::trunc);
 
-    Parser parser(R"(D:\Languages\CLL\Dynamic.lang)");
+    Parser parser(R"(D:\Languages\CLL\default.lang)");
     Tokenizer tokenizer(parser);
 
     auto tokenGroups = GetTokenGroups(tokenizer);
     for (auto& i : tokenGroups) i.printGroup();
 
     std::vector<CLL_EXP::Variable> variables;
+    std::vector<CLL_EXP::Function> functions;
     for (auto& i : tokenGroups) {
 
         CLL_EXP::Variable var;
+        CLL_EXP::Function func;
         using TokenType = Tokenizer::MainToken;
 
         std::string name;
-        bool variableDefinition = true;
+        bool namedDefinition = true;
 
-        for (auto& tok : i.tokens) {
-            if (tok.token == TokenType::INT_TYPE) {  var.setType(CLL_EXP::VariableType::INT32_TYPE); }
-            if (tok.token == TokenType::STRING_TYPE) { var.setType(CLL_EXP::VariableType::STRING_TYPE); }
+        for (int iteration = 0; auto& tok : i.tokens) {
+            if (tok.token == TokenType::INT_TYPE)
+                {
+                    var.setType(CLL_EXP::VariableType::INT32_TYPE);
+                    func.setType(CLL_EXP::VariableType::INT32_TYPE);
+                }
+            if (tok.token == TokenType::STRING_TYPE)
+                {
+                    var.setType(CLL_EXP::VariableType::STRING_TYPE);
+                    func.setType(CLL_EXP::VariableType::STRING_TYPE);
+                }
             if (tok.token == TokenType::NAMED) {
                 for (auto& alreadyDefined : variables) {
                     if (alreadyDefined.getName() == tok.tokenData) {
                         tok.token = Tokenizer::MainToken::VARIABLE_CALL;
-                        variableDefinition = false;
+                        namedDefinition = false;
                     }
                 }
-                if (variableDefinition)
-                    var.setName(tok.tokenData);
+                for (auto& alreadyDefined : functions) {
+                    if (alreadyDefined.getName() == tok.tokenData) {
+                        tok.token = Tokenizer::MainToken::FUNCTION_CALL;
+                        namedDefinition = false;
+                    }
+                }
+                if (namedDefinition)
+                    {
+                        var.setName(tok.tokenData);
+                        func.setName(tok.tokenData);
+                    }
             }
-            if (tok.token == TokenType::EQUALS) {}
-            if (tok.token == TokenType::AUTO_TYPE) { var.setType(CLL_EXP::VariableType::AUTO); }
+            if (tok.token == TokenType::AUTO_TYPE)
+                {
+                    var.setType(CLL_EXP::VariableType::AUTO);
+                    func.setType(CLL_EXP::VariableType::AUTO);
+                }
+
+            iteration++;
+        }
+        CLL_EXP::Variable argument;
+        for (int iter = 0; auto& arg : i.arguments) {
+            if (arg.token == TokenType::INT_TYPE)
+                {
+                    if (argument.getType() == CLL_EXP::VariableType::NONE)
+                        argument.setType(CLL_EXP::VariableType::INT32_TYPE);
+                    else
+                        argument = CLL_EXP::Variable();
+                }
+            else if (arg.token == TokenType::STRING_TYPE)
+                {
+                    if (argument.getType() == CLL_EXP::VariableType::NONE)
+                        argument.setType(CLL_EXP::VariableType::STRING_TYPE);
+                    else
+                        argument = CLL_EXP::Variable();
+                }
+            if (arg.token == TokenType::NAMED) {
+                argument.setName(arg.tokenData);
+                func.pushArgument(argument);
+                argument = CLL_EXP::Variable();
+            }
+
         }
 
         for (int iter = 0; auto &init: i.initializer) {
@@ -57,9 +104,12 @@ int main() {
             iter++;
         }
 
-        if (variableDefinition) {
+        if (namedDefinition && !i.isFunction) {
             output << var.generateOutput();
             variables.push_back(var);
+        } else if (namedDefinition && i.isFunction) {
+            output << func.generateOutput();
+            functions.push_back(func);
         }
     }
 

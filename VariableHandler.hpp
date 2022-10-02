@@ -286,7 +286,7 @@ namespace CLL_EXP {
     };
     inline std::string getVariableTypeAsString(VariableType type) {
         switch (type) {
-            case VariableType::NONE: return "None";
+            case VariableType::NONE: return "Void";
             case VariableType::INT8_TYPE: return "Int8";
             case VariableType::INT16_TYPE: return "Int16";
             case VariableType::INT32_TYPE: return "Int32";
@@ -296,7 +296,22 @@ namespace CLL_EXP {
             case VariableType::UINT32_TYPE: return "Uint32";
             case VariableType::UINT64_TYPE: return "Uint64";
             case VariableType::STRING_TYPE: return "String";
-            default: return "";
+            default: return "None";
+        }
+    }
+    inline std::string getVariableTypeAsCType(VariableType type, bool useStdInt) {
+        switch (type) {
+            case VariableType::NONE:        return "void";
+            case VariableType::INT8_TYPE:   return useStdInt ? "int8_t" : "signed char";
+            case VariableType::INT16_TYPE:  return useStdInt ? "int16_t" : "short";
+            case VariableType::INT32_TYPE:  return useStdInt ? "int32_t" : "int";
+            case VariableType::INT64_TYPE:  return useStdInt ? "int64_t" : "long long";
+            case VariableType::UINT8_TYPE:  return useStdInt ? "uint8_t" : "unsigned char";
+            case VariableType::UINT16_TYPE: return useStdInt ? "uint16_t" : "unsigned short";
+            case VariableType::UINT32_TYPE: return useStdInt ? "uint32_t" : "unsigned int";
+            case VariableType::UINT64_TYPE: return useStdInt ? "uint64_t" : "unsigned long long";
+            case VariableType::STRING_TYPE: return "const char*";
+            default: return "None";
         }
     }
 
@@ -337,6 +352,7 @@ namespace CLL_EXP {
         explicit Value(int64_t number) : value(number), strval(""), type(VariableType::INT64_TYPE) {}
         Value(std::string string) : value(0), strval(string), type(VariableType::STRING_TYPE) {}
         friend class Variable;
+        friend class Function;
     };
 
     class Variable {
@@ -357,52 +373,27 @@ namespace CLL_EXP {
 
         // TODO: Check Bounds Of Arguments Compared To min-max Range Type Deduction
         // TODO: Deal With Type Collisions
-        void push(int32_t number) {
-            Value v = Value(number);
+        template<typename DataType> void push(DataType data) {
+            Value v(data);
             if (type == VariableType::NONE) type = v.type;
+            if (v.type != type) {
+                std::cerr << "Type Collision Pushing Value: {" << v.value << " or " << v.strval << "} Of Type: " << getVariableTypeAsString(v.type)
+                            << " Into Variable Of Type: " << getVariableTypeAsString(type) << "\n";
+            }
             values.push_back(v);
-        }
-        void push(int64_t number) {
-            Value v = Value((int64_t)number);
-            if (type == VariableType::NONE) type = v.type;
-            values.push_back(v);
-        }
-        void push(std::string string) {
-            Value v = Value(string);
-            if (type == VariableType::NONE) type = v.type;
-            values.push_back(v);
-        }
-        void push(Value val) {
-            values.push_back(val);
         }
         std::string generateOutput() {
             std::string str;
 
-            RESTART_TYPE_EVAL_CASES:
-            switch (type) {
-                case VariableType::NONE:
-                case VariableType::AUTO:
-                {
-                    if (values.empty()) {
-                        std::cerr << "No Type Specified For Variable: " << name << "\n";
-                        break;
-                    } else {
-                        if (!values.empty()) type = values[0].type;
-                        goto RESTART_TYPE_EVAL_CASES;
-                    }
-                }
-
-                case VariableType::INT8_TYPE: { str += "int "; break; }
-                case VariableType::INT16_TYPE: { str += "int "; break; }
-                case VariableType::INT32_TYPE: { str += "int "; break; }
-                case VariableType::INT64_TYPE: { str += "long long int "; break; }
-                case VariableType::UINT8_TYPE: { str += "unsigned int "; break; }
-                case VariableType::UINT16_TYPE: { str += "unsigned int "; break; }
-                case VariableType::UINT32_TYPE: { str += "unsigned int "; break; }
-                case VariableType::UINT64_TYPE: { str += "unsigned long long int "; break; }
-                case VariableType::STRING_TYPE: { str += "const char* "; break; }
-                default: std::cout << "Implement Code Generation For Type: " << (int)type << "\n"; break;
+            if (type == VariableType::NONE || type == VariableType::AUTO) {
+                if (values.empty())
+                    std::cerr << "No Type Specified For Variable: " << name << "\n";
+                else if (!values.empty())
+                    type = values[0].type;
             }
+
+            str += getVariableTypeAsCType(type, false) + " ";
+
             str += name;
 
             if (values.size() == 1) {
@@ -426,7 +417,36 @@ namespace CLL_EXP {
         }
     };
 
+    class Function {
+    private:
+        VariableType type;
+        std::string name;
+        std::vector<Variable> arguments;
+    public:
+        void setType(VariableType _type) { type = _type; }
+        VariableType getType() { return type; }
+        void setName(std::string _name) { name = _name; }
+        std::string getName() { return name; }
 
+        void pushArgument(Variable arg) {
+            arguments.push_back(arg);
+        }
+
+        std::string generateOutput() {
+            std::string str = getVariableTypeAsCType(type, false) + " ";
+            str += name;
+            str += "(";
+            for (int loop = 0; auto& args : arguments) {
+                str += getVariableTypeAsCType(args.getType(), false) + " " + args.getName();
+                if (loop < arguments.size()-1)
+                    str += ", ";
+                loop++;
+            }
+            str += ")";
+            str += "{}";
+            return str;
+        }
+    };
 
 }
 
