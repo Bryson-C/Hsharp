@@ -71,27 +71,25 @@ int main() {
             iteration++;
         }
         CLL_EXP::Variable argument;
-        for (int iter = 0; auto& arg : i.arguments) {
+        for (auto& arg : i.arguments) {
             if (arg.token == TokenType::INT_TYPE)
                 {
-                    if (argument.getType() == CLL_EXP::VariableType::NONE)
-                        argument.setType(CLL_EXP::VariableType::INT32_TYPE);
-                    else
-                        argument = CLL_EXP::Variable();
+                    argument.setType(CLL_EXP::VariableType::INT32_TYPE);
                 }
             else if (arg.token == TokenType::STRING_TYPE)
                 {
-                    if (argument.getType() == CLL_EXP::VariableType::NONE)
-                        argument.setType(CLL_EXP::VariableType::STRING_TYPE);
-                    else
-                        argument = CLL_EXP::Variable();
+                    argument.setType(CLL_EXP::VariableType::STRING_TYPE);
                 }
-            if (arg.token == TokenType::NAMED) {
+            else if (arg.token == TokenType::NAMED)
                 argument.setName(arg.tokenData);
+            else if (arg.token == TokenType::COMMA) {
                 func.pushArgument(argument);
                 argument = CLL_EXP::Variable();
             }
-
+        }
+        if (argument.getType() != CLL_EXP::VariableType::NONE) {
+            func.pushArgument(argument);
+            argument = CLL_EXP::Variable();
         }
 
         for (int iter = 0; auto &init: i.initializer) {
