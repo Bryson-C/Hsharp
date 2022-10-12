@@ -33,9 +33,13 @@ public:
         NEW_LINE,
         TAB,
 
+        // {
         OPEN_BRACE,
+        // }
         CLOSE_BRACE,
+        // [
         OPEN_BRACKET,
+        // ]
         CLOSE_BRACKET,
         SEMICOLON,
         EQUALS,
@@ -170,34 +174,44 @@ public:
     }
 };
 
-struct TokenGroup {
+class TokenGroup {
+private:
     bool isFunction = false;
     std::vector<Tokenizer::Token> tokens;
     std::vector<Tokenizer::Token> initializer;
     std::vector<Tokenizer::Token> arguments;
+
+    Parser::FilePosition startPos, endPos;
+public:
     void printGroup() {
+
+        if (empty()) {
+            std::cout << "-- EMPTY GROUP --\n" << "\tFrom " << startPos.errorString() << "\n\tTo " << endPos.errorString() << "\n-- END GROUP --\n";
+        }
+
         std::cout << " -- NEW GROUP ";
         if (isFunction) std::cout << "[.FUNCTION.] --\n"; else std::cout << "--\n";
 
-        for (auto& def : tokens) {
-            printf("\t");
-            def.print();
-        }
+        for (auto& def : tokens) { printf("\t"); def.print(); }
 
         std::cout << " -- () --\n";
-        for (auto& arg : arguments) {
-            printf("\t");
-            arg.print();
-        }
-
+        for (auto& arg : arguments) { printf("\t"); arg.print(); }
 
         std::cout << " -- :: --\n";
-        for (auto& init : initializer) {
-            printf("\t");
-            init.print();
-        }
+        for (auto& init : initializer) { printf("\t"); init.print(); }
         std::cout << " -- END GROUP --\n\n";
     }
+    bool empty() {
+        return tokens.empty() && initializer.empty() && arguments.empty();
+    }
+    bool isFunctionType() {
+        return isFunction;
+    }
+    std::vector<Tokenizer::Token> getTokens() { return tokens; }
+    std::vector<Tokenizer::Token> getInitializer() { return initializer; }
+    std::vector<Tokenizer::Token> getArguments() { return arguments; }
+    friend class Tokenizer;
+    friend std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);
 };
 
 std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);

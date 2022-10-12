@@ -32,7 +32,7 @@ int main() {
         std::string name;
         bool namedDefinition = true;
 
-        for (int iteration = 0; auto& tok : i.tokens) {
+        for (int iteration = 0; auto& tok : i.getTokens()) {
             if (tok.token == TokenType::INT_TYPE)
                 {
                     var.setType(CLL_EXP::VariableType::INT32_TYPE);
@@ -71,7 +71,7 @@ int main() {
             iteration++;
         }
         CLL_EXP::Variable argument;
-        for (auto& arg : i.arguments) {
+        for (auto& arg : i.getArguments()) {
             if (arg.token == TokenType::INT_TYPE)
                 {
                     argument.setType(CLL_EXP::VariableType::INT32_TYPE);
@@ -92,7 +92,7 @@ int main() {
             argument = CLL_EXP::Variable();
         }
 
-        for (int iter = 0; auto &init: i.initializer) {
+        for (int iter = 0; auto &init: i.getInitializer()) {
             CLL_EXP::Value val;
 
             if (init.token == TokenType::INTEGER) val = CLL_EXP::Value(std::stoi(init.tokenData));
@@ -102,10 +102,10 @@ int main() {
             iter++;
         }
 
-        if (namedDefinition && !i.isFunction) {
+        if (namedDefinition && !i.isFunctionType()) {
             output << var.generateOutput();
             variables.push_back(var);
-        } else if (namedDefinition && i.isFunction) {
+        } else if (namedDefinition && i.isFunctionType()) {
             output << func.generateOutput();
             functions.push_back(func);
         }

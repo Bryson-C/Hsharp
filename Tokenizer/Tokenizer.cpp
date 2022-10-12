@@ -37,30 +37,50 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
     bool initialized = false, insideArgList = false;
 
     for (int i = 0; i < tokenList.size(); i++) {
+        auto current = tokenList[i];
+        auto currentToken = tokenList[i].token;
         using TokenType = Tokenizer::MainToken;
 
-        if (tokenList[i].token == TokenType::SEMICOLON) {
-            statements.push_back(group);
-            group = TokenGroup();
-            initialized = false;
-            continue;
+
+        switch (currentToken) {
+            case TokenType::CLOSE_BRACE:
+            case TokenType::SEMICOLON: {
+                group.endPos = current.filePosition;
+                if (!group.empty())
+                    statements.push_back(group);
+                group = TokenGroup();
+                group.startPos = current.filePosition;
+                initialized = insideArgList = false;
+                break;
+            }
+            case TokenType::OPEN_BRACE:
+            case TokenType::EQUALS: { initialized = true; break; }
+            case TokenType::OPEN_BRACKET: {
+                if (!initialized) {
+                    insideArgList = true;
+                    group.isFunction = true;
+                }
+                break;
+            }
+            case TokenType::CLOSE_BRACKET: {
+                if (group.isFunction) { insideArgList = false; }
+                break;
+            }
+            default: {
+                if (initialized)
+                    group.initializer.push_back(current);
+                else if (insideArgList)
+                    group.arguments.push_back(current);
+                else
+                    group.tokens.push_back(current);
+                break;
+            }
+
         }
-
-        if (tokenList[i].token == TokenType::EQUALS) { initialized = true; continue; }
-        else if (tokenList[i].token == TokenType::COMMA) { continue; }
-
-        if (tokenList[i].token == TokenType::OPEN_BRACKET) { if (!initialized) { insideArgList = true; group.isFunction = true; } continue; }
-        if (tokenList[i].token == TokenType::CLOSE_BRACKET) { if (insideArgList) insideArgList = false; continue; }
-
-        if (initialized)
-            group.initializer.push_back(tokenList[i]);
-        else if (insideArgList)
-            group.arguments.push_back(tokenList[i]);
-        else
-            group.tokens.push_back(tokenList[i]);
     }
-    if (!group.tokens.empty())
+    if (!group.empty())
         statements.push_back(group);
+
     return statements;
 }
 
