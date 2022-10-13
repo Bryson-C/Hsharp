@@ -43,6 +43,7 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
 
 
         switch (currentToken) {
+            case TokenType::NEW_LINE:
             case TokenType::CLOSE_BRACE:
             case TokenType::SEMICOLON: {
                 group.endPos = current.filePosition;
