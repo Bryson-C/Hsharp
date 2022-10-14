@@ -28,7 +28,54 @@ inline void panic(std::string error = "", int code = -1) {
     exit(code);
 }
 
-constexpr bool PANIC_ON_ERROR = false;
+
+constexpr bool PANIC_ON_ERROR = true;
+
+namespace {
+    struct Any {
+    private:
+        static const int32_t STRING_SIZE = 128;
+        union Data {
+            int_fast64_t    _int;
+            char            _str[STRING_SIZE];
+            double          _flt;
+        };
+    public:
+        enum class Type {
+            None,
+            Int,
+            String,
+            Float
+        } dataType;
+        Data value;
+
+        Any() : dataType(Type::None), value((Data){._int = 0}) {}
+        Any(std::string string) : dataType(Type::String) {
+            if (string.length() > 128)
+                std::cerr << "String Too Large For Storage!\n";
+            memcpy(value._str, string.data(), 128);
+        }
+        Any(int64_t integer) : dataType(Type::Int), value((Data){._int = integer})  {}
+        Any(float flt) : dataType(Type::Int), value((Data){._flt = flt})  {}
+
+        template<typename ...T> friend void CLL_StdErr(std::string message, T... t);
+    };
+}
+
+template<typename ...T>
+void CLL_StdErr(T... t) {
+    std::vector<Any> texts = {t...};
+    std::string message;
+    for (const auto& msg : texts) {
+        switch (msg.dataType) {
+            case Any::Type::Int:        message += std::to_string(msg.value._int) + " "; break;
+            case Any::Type::String:     message += msg.value._str; message += " "; break;
+            case Any::Type::Float:      message += std::to_string(msg.value._flt) + " "; break;
+            default: break;
+        }
+    }
+    std::cerr << ((PANIC_ON_ERROR) ? "PANICKED: " : "") << message << "\n";
+}
 inline void CLL_StdErr(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
     std::cerr << message << "\n";
     for (uint32_t i = 0; i < labels.size(); i++) {
