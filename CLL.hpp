@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <varargs.h>
 #include <assert.h>
 
 namespace CLL_StdLabels {
@@ -49,33 +50,22 @@ namespace {
         } dataType;
         Data value;
 
-        Any() : dataType(Type::None), value((Data){._int = 0}) {}
-        Any(std::string string) : dataType(Type::String) {
-            if (string.length() > 128)
+        Any() : dataType(Type::None) { value._int = 0; }
+        Any(const char* string) : dataType(Type::String) {
+            if (strlen(string) > STRING_SIZE)
                 std::cerr << "String Too Large For Storage!\n";
-            memcpy(value._str, string.data(), 128);
+            memcpy(value._str, string, STRING_SIZE);
         }
-        Any(int64_t integer) : dataType(Type::Int), value((Data){._int = integer})  {}
-        Any(float flt) : dataType(Type::Int), value((Data){._flt = flt})  {}
+        explicit Any(std::string string) : dataType(Type::String) {
+            *this = Any(string.c_str());
+        }
+        explicit Any(int64_t integer) : dataType(Type::Int) { value._int = integer; }
+        explicit Any(float flt) : dataType(Type::Int) { value._flt = 0; }
 
         template<typename ...T> friend void CLL_StdErr(std::string message, T... t);
     };
 }
 
-template<typename ...T>
-void CLL_StdErr(T... t) {
-    std::vector<Any> texts = {t...};
-    std::string message;
-    for (const auto& msg : texts) {
-        switch (msg.dataType) {
-            case Any::Type::Int:        message += std::to_string(msg.value._int) + " "; break;
-            case Any::Type::String:     message += msg.value._str; message += " "; break;
-            case Any::Type::Float:      message += std::to_string(msg.value._flt) + " "; break;
-            default: break;
-        }
-    }
-    std::cerr << ((PANIC_ON_ERROR) ? "PANICKED: " : "") << message << "\n";
-}
 inline void CLL_StdErr(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
     std::cerr << message << "\n";
     for (uint32_t i = 0; i < labels.size(); i++) {
@@ -98,12 +88,29 @@ struct Duople {
     DataType1 one;
     DataType2 two;
 };
+
+template<typename DataType> using Result = Duople<bool, DataType>;
+template<typename DataType> Result<DataType> Some(DataType data) {
+    return {
+            .one = true,
+            .two = data,
+    };
+}
+template<typename DataType> Result<DataType> None() {
+    return {
+            .one = false,
+            .two = DataType(),
+    };
+}
+
 template<typename DataType1, typename DataType2, typename DataType3>
 struct Triple {
     DataType1 one;
     DataType2 two;
     DataType3 three;
 };
+
+
 
 
 inline Duople<bool, int64_t> isDigit(std::string string) {
@@ -128,35 +135,21 @@ bool isAll(T data, std::vector<T> comp) {
     return true;
 }
 
-template<typename T>
-T& last(std::vector<T>& vec) { return vec[vec.size()-1]; }
-template<typename T>
-T& first(std::vector<T>& vec) { return vec[0]; }
-template<typename T>
-void push(std::vector<T>& vec, std::vector<T> data) { for (auto& i : data) vec.push_back(i); }
-template<typename T>
-void push(std::vector<T>& vec, T data) {  vec.push_back(data); }
+template<typename T> T& last(std::vector<T>& vec) { return vec[vec.size()-1]; }
+template<typename T> T& first(std::vector<T>& vec) { return vec[0]; }
+template<typename T> void push(std::vector<T>& vec, std::vector<T> data) { for (auto& i : data) vec.push_back(i); }
+template<typename T> void push(std::vector<T>& vec, T data) {  vec.push_back(data); }
 
 
-/*
-// TODO: Finish Struct
-template<typename T>
-class Vector {
-private:
-    T* data;
-    size_t elementCount;
-    size_t elementSize;
-   // size_t getElementCount(T* array) { return (sizeof(array)/sizeof(array[0])); }
-public:
-    Vector(std::initializer_list<T> init) : elementCount(init.size()), elementSize(sizeof(data(init)[0])) {
-        data = (T*)malloc(sizeof(init.size()) * elementSize);
-        data = (T*)data(init);
-    }
-    inline T& last() { return data[elementCount-1]; }
-    inline T& first() { return data[0]; }
-    //inline void push(std::initializer_list<T> init) { size_t count = getElementCount(init); data[elementCount+=count] = init; }
-};
-*/
+inline std::string toLowerCase(std::string str) {
+    for (auto& c : str) c = (char)tolower(c);
+    return str;
+}
+inline std::string toUpperCase(std::string str) {
+    for (auto& c : str) c = (char)toupper(c);
+    return str;
+}
+
 
 
 #endif //CLL_CLL_H

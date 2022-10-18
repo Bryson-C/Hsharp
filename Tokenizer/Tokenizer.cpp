@@ -2,7 +2,7 @@
 // Created by Owner on 8/14/2022.
 //
 
-#include "Tokenizer.h"
+#include "Tokenizer.hpp"
 
 Tokenizer::Tokenizer(std::vector<Parser::ParsedString> parsedArray) {
     for (auto& i : parsedArray) {
@@ -54,6 +54,7 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
                 initialized = insideArgList = false;
                 break;
             }
+            
             case TokenType::OPEN_BRACE:
             case TokenType::EQUALS: { initialized = true; break; }
             case TokenType::OPEN_BRACKET: {
@@ -63,10 +64,12 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
                 }
                 break;
             }
+
             case TokenType::CLOSE_BRACKET: {
                 if (group.isFunction) { insideArgList = false; }
                 break;
             }
+
             default: {
                 if (initialized)
                     group.initializer.push_back(current);
