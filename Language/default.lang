@@ -1,0 +1,12 @@
+
+
+Let values = ["Hello", "World"];
+Let values2 = ["1", "2"];
+Let time = 10;
+
+time = 5;
+
+
+Int add[Int one, Int two] { one + two; }
+Int giveZero[] { 0; }
+

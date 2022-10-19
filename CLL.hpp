@@ -85,23 +85,13 @@ inline void CLL_StdOut(std::string message, std::initializer_list<std::string> l
 // Sounded Funny And Also Has Duo (2) In The Name
 template<typename DataType1, typename DataType2>
 struct Duople {
+    Duople() = default;
+    Duople(DataType1 data1, DataType2 data2) { one = data1; two = data2; }
+
     DataType1 one;
     DataType2 two;
 };
 
-template<typename DataType> using Result = Duople<bool, DataType>;
-template<typename DataType> Result<DataType> Some(DataType data) {
-    return {
-            .one = true,
-            .two = data,
-    };
-}
-template<typename DataType> Result<DataType> None() {
-    return {
-            .one = false,
-            .two = DataType(),
-    };
-}
 
 template<typename DataType1, typename DataType2, typename DataType3>
 struct Triple {

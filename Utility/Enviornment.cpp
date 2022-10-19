@@ -11,7 +11,7 @@ namespace {
     }
 }
 
-std::vector<Duople<std::string, std::string>> gatherCmdLineArguments(int argc, const char** argv) {
+std::vector<Duople<std::string, std::string>> getCmdLineArguments(int argc, const char** argv) {
     std::vector<std::string> cmdArgument(argc);
     // start at index of 1 to avoid program name
     for (size_t i = 1; i < argc; i++) {
@@ -36,7 +36,41 @@ std::vector<Duople<std::string, std::string>> gatherCmdLineArguments(int argc, c
         }
         loop++;
     }
+    for (auto& value : optionAndValue) {
+        std::string fixed;
+        for (auto& c : value.two) {
+            if (c == '\"' || c == '\'')
+                continue;
+            else
+                fixed += c;
+        }
+        value.two = fixed;
+    }
     return optionAndValue;
+}
+std::vector<Duople<std::string, std::string>> getFileArguments(std::filesystem::path path) {
+    path = std::filesystem::absolute(path);
+    if (!std::filesystem::exists(path) || path.empty())
+        CLL_StdErr("Error Loading Path:", {"Path"}, {path.string()});
+
+    std::vector<Duople<std::string, std::string>> optionAndValue;
+    auto wordBuffer = Parser(path.string(), Parser::RecordNewLine).getWordBuffer();
+    Duople<std::string, std::string> option;
+    for (int i = 0; i < wordBuffer.size(); i++) {
+        std::cout << wordBuffer[i].str << "\n";
+        continue;
+        if (wordBuffer[i].str == "-") {
+            option.one = wordBuffer[i+1];
+            i++;
+            continue;
+        }
+
+    }
+
+
+    return {
+            {}
+    };
 }
 
 CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& arguments) {
@@ -53,10 +87,41 @@ CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& 
             else if (toLowerCase(arg.two) == "false")
                 newLines = false;
         }
+        else if (arg.one == "dir") {
+            baseDirectory = std::filesystem::absolute(arg.two);
+        }
     }
-    printf("Settings:\n\tDefault Integer Width: %i\n\tDefault String Size: %i\n\tRecord New Lines: %s\n",
+    printf("Settings:\n"
+           "\tDefault Integer Width: %i\n"
+           "\tDefault String Size: %i\n"
+           "\tRecord New Lines: %s\n"
+           "\tBase File Directory: '%s'\n",
            defaultIntegerWidth,
            defaultStringSize,
-           ((newLines)?"True":"False"));
+           ((newLines)?"True":"False"),
+           baseDirectory.string().c_str());
 }
 
+
+CompilerDirectory::CompilerDirectory(std::filesystem::path path, std::string extension) {
+    path = std::filesystem::absolute(path);
+    if (path.empty())
+        path = std::filesystem::current_path();
+    if (!std::filesystem::exists(path) || path.empty())
+        CLL_StdErr("Error Loading Path:", {"Path"}, {path.string()});
+
+
+    Duople<bool, std::filesystem::path> confFile = { false, {} };
+    for (const auto& file : std::filesystem::directory_iterator(path)) {
+        std::cout << file.path().string() << "\n";
+        if (file.path().filename() == "config.txt") {
+            confFile.one = true;
+            confFile.two = file.path();
+        } else {
+            std::cout << file.path().filename() << " " << file.path().extension() << "\n";
+        }
+    }
+
+    baseDirectory = path;
+    configFile = confFile.two;
+}

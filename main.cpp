@@ -16,9 +16,19 @@
 
 
 int main(int argc, const char** argv) {
-    auto args = gatherCmdLineArguments(argc, argv);
+
+    auto args = getCmdLineArguments(argc, argv);
     for (const auto& i : args) std::cout << "Option: " << i.one << "  |  Value: " << i.two << "\n";
     CompilerOptions compilerOptions(args);
+
+    CompilerDirectory directory(compilerOptions.baseDirectory, "");
+
+    compilerOptions.linkDirectory(directory);
+
+    return 0;
+
+
+
 
     std::ofstream output(R"(D:\Languages\CLL\output.c)", std::ios::trunc);
 

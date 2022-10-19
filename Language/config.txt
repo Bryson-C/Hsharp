@@ -1,0 +1,4 @@
+-intWidth:64
+-stringSize:128
+-newLines:false
+-dir:"./"
