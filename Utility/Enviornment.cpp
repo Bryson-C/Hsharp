@@ -11,7 +11,7 @@ namespace {
     }
 }
 
-std::vector<Duople<std::string, std::string>> getCmdLineArguments(int argc, const char** argv) {
+std::vector<Duople<std::string, std::string>> getCmdLineArguments(size_t argc, const char** argv, size_t indexOffset, char prefix) {
     std::vector<std::string> cmdArgument(argc);
     // start at index of 1 to avoid program name
     for (size_t i = 1; i < argc; i++) {
@@ -20,10 +20,11 @@ std::vector<Duople<std::string, std::string>> getCmdLineArguments(int argc, cons
 
     std::vector<Duople<std::string, std::string>> optionAndValue;
     for (int loop = 0; const auto& arg : cmdArgument) {
-        if (arg[0] == '-') {
-            int index = 1;
+        if (prefix == ' ' || arg[0] == prefix) {
+            size_t index = indexOffset;
             std::string option, value;
-            while (arg[index] != ':' && index < arg.size()-1) {
+            printf("Arg: %s\n", arg.c_str());
+            while (index < arg.size()-1 && arg[index] != ':') {
                 option += arg[index++];
             }
             if (arg[index] == ':') {
@@ -32,7 +33,7 @@ std::vector<Duople<std::string, std::string>> getCmdLineArguments(int argc, cons
                     value += arg[index++];
                 } while (index < arg.size());
             }
-            optionAndValue.push_back({option, value});
+            optionAndValue.emplace_back(option, value);
         }
         loop++;
     }
@@ -46,6 +47,7 @@ std::vector<Duople<std::string, std::string>> getCmdLineArguments(int argc, cons
         }
         value.two = fixed;
     }
+
     return optionAndValue;
 }
 std::vector<Duople<std::string, std::string>> getFileArguments(std::filesystem::path path) {
@@ -53,24 +55,40 @@ std::vector<Duople<std::string, std::string>> getFileArguments(std::filesystem::
     if (!std::filesystem::exists(path) || path.empty())
         CLL_StdErr("Error Loading Path:", {"Path"}, {path.string()});
 
-    std::vector<Duople<std::string, std::string>> optionAndValue;
     auto wordBuffer = Parser(path.string(), Parser::RecordNewLine).getWordBuffer();
-    Duople<std::string, std::string> option;
-    for (int i = 0; i < wordBuffer.size(); i++) {
-        std::cout << wordBuffer[i].str << "\n";
-        continue;
-        if (wordBuffer[i].str == "-") {
-            option.one = wordBuffer[i+1];
-            i++;
+    std::vector<Duople<std::string, std::string>> options;
+    std::string option, value;
+    bool foundOptionName = false;
+    for (const auto& i : wordBuffer) {
+        if (i.str == "\\n") {
+            if (!option.empty())
+                options.emplace_back(option, value);
+            option.clear();
+            value.clear();
+            foundOptionName = false;
+            continue;
+        }
+        else if (i.str == ":") {
+            foundOptionName = true;
             continue;
         }
 
+        if (!foundOptionName) {
+            option += i.str;
+        } else {
+            value += stripQuotes(i.str);
+        }
+
+    }
+    if (!option.empty() && !value.empty()) {
+        options.emplace_back(option, value);
     }
 
+    for (const auto& i : options) {
+        std::cout << i.one << " | " << i.two << '\n';
+    }
 
-    return {
-            {}
-    };
+    return options;
 }
 
 CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& arguments) {
@@ -88,7 +106,8 @@ CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& 
                 newLines = false;
         }
         else if (arg.one == "dir") {
-            baseDirectory = std::filesystem::absolute(arg.two);
+            std::cout << "Path: " << arg.two << "\n";
+            baseDirectory = (std::filesystem::path(arg.two).is_absolute()) ? arg.two : std::filesystem::absolute(arg.two);
         }
     }
     printf("Settings:\n"
@@ -103,7 +122,7 @@ CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& 
 }
 
 
-CompilerDirectory::CompilerDirectory(std::filesystem::path path, std::string extension) {
+CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
     path = std::filesystem::absolute(path);
     if (path.empty())
         path = std::filesystem::current_path();
@@ -113,12 +132,9 @@ CompilerDirectory::CompilerDirectory(std::filesystem::path path, std::string ext
 
     Duople<bool, std::filesystem::path> confFile = { false, {} };
     for (const auto& file : std::filesystem::directory_iterator(path)) {
-        std::cout << file.path().string() << "\n";
         if (file.path().filename() == "config.txt") {
             confFile.one = true;
             confFile.two = file.path();
-        } else {
-            std::cout << file.path().filename() << " " << file.path().extension() << "\n";
         }
     }
 

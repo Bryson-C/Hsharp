@@ -16,23 +16,27 @@
 
 
 int main(int argc, const char** argv) {
-
     auto args = getCmdLineArguments(argc, argv);
     for (const auto& i : args) std::cout << "Option: " << i.one << "  |  Value: " << i.two << "\n";
     CompilerOptions compilerOptions(args);
 
-    CompilerDirectory directory(compilerOptions.baseDirectory, "");
-
+    CompilerDirectory directory(R"(D:\Languages\CLL\Language)");
     compilerOptions.linkDirectory(directory);
+
+    std::ifstream baseFileDir(compilerOptions.baseDirectory);
+    if (baseFileDir.is_open()) {
+        std::cout << "Opened File!\n";
+    }
+    baseFileDir.close();
 
     return 0;
 
 
 
 
-    std::ofstream output(R"(D:\Languages\CLL\output.c)", std::ios::trunc);
+    std::ofstream output(R"(D:\Languages\CLL\Language\output.c)", std::ios::trunc);
 
-    Parser Parser(R"(D:\Languages\CLL\default.lang)");
+    Parser Parser(R"(D:\Languages\CLL\Language\default.lang)");
     Tokenizer Tokenizer(Parser);
 
     auto tokenGroups = GetTokenGroups(Tokenizer);

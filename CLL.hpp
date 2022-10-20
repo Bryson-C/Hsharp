@@ -139,6 +139,19 @@ inline std::string toUpperCase(std::string str) {
     for (auto& c : str) c = (char)toupper(c);
     return str;
 }
+inline std::string stripQuotes(std::string str) {
+    if (str.empty() || !isAny(str[0], {'\'','\"'}))
+        return str;
+    char quoteType = str[0];
+    std::string newString;
+    for (auto& chr : str) {
+        if (chr == quoteType) {
+            continue;
+        }
+        newString += chr;
+    }
+    return newString;
+}
 
 
 

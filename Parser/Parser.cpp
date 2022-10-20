@@ -2,7 +2,7 @@
 // Created by Owner on 6/8/2022.
 //
 
-#include "Parser.h"
+#include "Parser.hpp"
 
 
 
@@ -73,6 +73,7 @@
 
 std::vector<Parser::ParsedString> Parser::parse(std::string path) {
     std::ifstream file(path);
+    file.seekg(0);
     if (!file.is_open()) { std::cerr << "File '" << path << "' Couldn't Open!\n"; return {}; }
     auto parentDirectory = std::filesystem::path(path).parent_path();
 
@@ -92,15 +93,17 @@ std::vector<Parser::ParsedString> Parser::parse(std::string path) {
                 }
                 continue;
             }
-            // Reader Entire String
-            else if (buffer[i] == '\"') {
+            // Read Entire String
+            else if (buffer[i] == '\"' || buffer[i] == '\'') {
                 size_t startIndex = i;
-                std::string strBuffer = "\"";
+                std::string strBuffer;
+                strBuffer += buffer[i];
+                char endChar = buffer[i];
                 i++;
-                while (buffer[i] != '\"') {
+                while (buffer[i] != endChar) {
                     strBuffer += buffer[i++];
                 }
-                strBuffer += "\"";
+                strBuffer += endChar;
                 content.push_back({strBuffer, {line, startIndex, path}});
                 continue;
             }
