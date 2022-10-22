@@ -31,6 +31,7 @@ struct CompilerDirectory {
 struct CompilerOptions {
     CompilerOptions() = default;
     CompilerOptions(std::vector<Duople<std::string, std::string>>& arguments);
+    CompilerOptions(CompilerDirectory& directory);
 
     std::filesystem::path baseDirectory = std::filesystem::current_path();
     std::filesystem::path configFile;

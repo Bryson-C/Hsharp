@@ -12,17 +12,6 @@
 #include <varargs.h>
 #include <assert.h>
 
-namespace CLL_StdLabels {
-    constexpr const char* Data = "Data";
-    constexpr const char* Cope = "Cope";
-    constexpr const char* Location = "Location";
-    constexpr const char* TODO = "TODO";
-    constexpr const char* Index = "Index";
-    constexpr const char* Variable = "Variable";
-    constexpr const char* Offender = "Offender";
-    constexpr const char* OffendingVariable = "Offending Variable";
-
-};
 
 inline void panic(std::string error = "", int code = -1) {
     std::cerr << error << "\n";
@@ -154,5 +143,58 @@ inline std::string stripQuotes(std::string str) {
 }
 
 
+/*
+class String {
+private:
+    char* _buffer = nullptr;
+    size_t _bufferSize = 0;
+    size_t _charOffset = 0;
+    void allocate(size_t size) {
+        if (_bufferSize <= 0 || size > _bufferSize) {
+            if (_buffer == nullptr)
+                _buffer = (char*)malloc(sizeof(char) * (_bufferSize = size+1));
+            else
+                _buffer = (char*)realloc(_buffer, sizeof(char) * (_bufferSize = size+1));
+        }
+    }
+    static void couldntAllocateError(int result, const char* str) {
+        if (result != 0) {
+            std::cerr << "Failed Creating String: '" << str << "'\n";
+        }
+    }
+public:
+    String() = default;
+    String(const char* str) {
+        allocate((_charOffset = strlen(str)));
+        int result = strcpy_s(_buffer, _bufferSize, str);
+        _buffer[_charOffset] = '\0';
+        couldntAllocateError(result, str);
+        std::cout << "Created New String: '" << _buffer << "'\n";
+    }
+    String& operator=(const char* str) { *this = String(str); return *this; }
+    String& operator=(String str) { *this = String(str._buffer); return *this; }
+    explicit operator const char*() { return _buffer; }
+
+    String& operator+(String str) {
+        allocate(length() + str.length());
+        int result = strcpy_s(_buffer+_charOffset, _bufferSize, str._buffer);
+        couldntAllocateError(result, str._buffer);
+        std::cout << "Created New String: '" << _buffer << "'\n";
+        return *this;
+    }
+
+    // Returns Strlen( self )
+    size_t length() {
+        return strlen(_buffer);
+    }
+
+
+    friend std::ostream& operator<<(std::ostream& stream, String str);
+};
+
+inline std::ostream& operator<<(std::ostream& stream, String str) {
+    return (stream << str._buffer);
+}
+*/
 
 #endif //CLL_CLL_H

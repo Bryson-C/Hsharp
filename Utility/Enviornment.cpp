@@ -23,7 +23,6 @@ std::vector<Duople<std::string, std::string>> getCmdLineArguments(size_t argc, c
         if (prefix == ' ' || arg[0] == prefix) {
             size_t index = indexOffset;
             std::string option, value;
-            printf("Arg: %s\n", arg.c_str());
             while (index < arg.size()-1 && arg[index] != ':') {
                 option += arg[index++];
             }
@@ -84,10 +83,6 @@ std::vector<Duople<std::string, std::string>> getFileArguments(std::filesystem::
         options.emplace_back(option, value);
     }
 
-    for (const auto& i : options) {
-        std::cout << i.one << " | " << i.two << '\n';
-    }
-
     return options;
 }
 
@@ -120,7 +115,9 @@ CompilerOptions::CompilerOptions(std::vector<Duople<std::string, std::string>>& 
            ((newLines)?"True":"False"),
            baseDirectory.string().c_str());
 }
-
+CompilerOptions::CompilerOptions(CompilerDirectory& directory) {
+    linkDirectory(directory);
+}
 
 CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
     path = std::filesystem::absolute(path);
@@ -138,6 +135,6 @@ CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
         }
     }
 
-    baseDirectory = path;
+    baseDirectory = confFile.two.parent_path();
     configFile = confFile.two;
 }

@@ -64,31 +64,6 @@ inline std::string getVariableTypeAsCType(VariableType type, bool useStdInt) {
     }
 }
 
-template<typename DataType> struct Range {
-private:
-public:
-    static VariableType GetAsType(DataType from, DataType max) {
-        bool isSigned = from < 0;
-        if (isSigned) {
-            if (max > INT32_MAX) return VariableType::INT64_TYPE;
-            else if (max > INT16_MAX) return VariableType::INT32_TYPE;
-            else if (max > INT8_MAX) return VariableType::INT16_TYPE;
-            else return VariableType::INT8_TYPE;
-        } else {
-            if (max > UINT32_MAX) return VariableType::UINT64_TYPE;
-            else if (max > UINT16_MAX) return VariableType::UINT32_TYPE;
-            else if (max > UINT8_MAX) return VariableType::UINT16_TYPE;
-            else return VariableType::UINT8_TYPE;
-        }
-    }
-    static std::vector<DataType> GetAsRange(DataType from, DataType to, int_fast32_t step) {
-        std::vector<DataType> range;
-        for (int i = static_cast<int>(from); i < static_cast<int>(to); i += step)
-            range.push_back(static_cast<DataType>(i));
-        return range;
-    }
-};
-
 
 class Value {
 private:
@@ -115,7 +90,6 @@ public:
     Variable() {}
     Variable(const char* _name) : name(_name), type(VariableType::NONE) {}
     Variable(const char* _name, VariableType _type) : name(_name), type(_type) {}
-    Variable(const char* _name, int_fast64_t min, uint_fast64_t max) : name(_name) { type = Range<int_least64_t>::GetAsType(min, max); }
 
 
     void setName(std::string str) { name = str; }
@@ -218,6 +192,13 @@ public:
 
     void setName(std::string str) { name = str; }
     void push(Tokenizer::Token token) { initializer.push_back(token); }
+
+    std::string getName() {
+        return name;
+    }
+    std::vector<Tokenizer::Token> getInitializer() {
+        return initializer;
+    }
 };
 
 

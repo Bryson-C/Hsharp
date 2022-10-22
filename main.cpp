@@ -13,23 +13,28 @@
 
 
 
-
+#define DEBUG
 
 int main(int argc, const char** argv) {
+
+
     auto args = getCmdLineArguments(argc, argv);
-    for (const auto& i : args) std::cout << "Option: " << i.one << "  |  Value: " << i.two << "\n";
-    CompilerOptions compilerOptions(args);
 
-    CompilerDirectory directory(R"(D:\Languages\CLL\Language)");
-    compilerOptions.linkDirectory(directory);
+    std::string languageFolder;
+#ifdef DEBUG
+    languageFolder = R"(D:\Languages\CLL\Language)";
+#endif
+/*
+    for (const auto& i : args)
+        if (std::string value = stripQuotes(i.two); i.one == "dir")
+            languageFolder = ((std::filesystem::path(value).is_absolute()) ? std::filesystem::path(value) : std::filesystem::absolute(std::filesystem::path(value))).string();
+*/
 
-    std::ifstream baseFileDir(compilerOptions.baseDirectory);
-    if (baseFileDir.is_open()) {
-        std::cout << "Opened File!\n";
-    }
-    baseFileDir.close();
+    CompilerDirectory directory(languageFolder);
 
-    return 0;
+    CompilerOptions compilerOptions(directory);
+
+
 
 
 
@@ -45,104 +50,6 @@ int main(int argc, const char** argv) {
 
     auto program = DetermineScope(compilerOptions, tokenGroups);
 
-
-/*
-    std::vector<Variable> variables;
-    std::vector<Function> functions;
-    for (auto& i : tokenGroups) {
-
-        Variable var;
-        Function func;
-        using TokenType = Tokenizer::MainToken;
-
-        std::string name;
-        bool namedDefinition = true;
-
-        for (int iteration = 0; auto& tok : i.getTokens()) {
-            if (tok.token == TokenType::INT_TYPE)
-                {
-                    var.setType(VariableType::INT32_TYPE);
-                    func.setType(VariableType::INT32_TYPE);
-                }
-            if (tok.token == TokenType::STRING_TYPE)
-                {
-                    var.setType(VariableType::STRING_TYPE);
-                    func.setType(VariableType::STRING_TYPE);
-                }
-            if (tok.token == TokenType::NAMED) {
-                for (auto& alreadyDefined : variables) {
-                    if (alreadyDefined.getName() == tok.tokenData) {
-                        tok.token = Tokenizer::MainToken::VARIABLE_CALL;
-                        namedDefinition = false;
-                    }
-                }
-                for (auto& alreadyDefined : functions) {
-                    if (alreadyDefined.getName() == tok.tokenData) {
-                        tok.token = Tokenizer::MainToken::FUNCTION_CALL;
-                        namedDefinition = false;
-                    }
-                }
-                if (namedDefinition)
-                    {
-                        var.setName(tok.tokenData);
-                        func.setName(tok.tokenData);
-                    }
-            }
-            if (tok.token == TokenType::AUTO_TYPE)
-                {
-                    var.setType(VariableType::AUTO);
-                    func.setType(VariableType::AUTO);
-                }
-
-            iteration++;
-        }
-        Variable argument;
-        for (auto& arg : i.getArguments()) {
-            if (arg.token == TokenType::INT_TYPE)
-                {
-                    argument.setType(VariableType::INT32_TYPE);
-                }
-            else if (arg.token == TokenType::STRING_TYPE)
-                {
-                    argument.setType(VariableType::STRING_TYPE);
-                }
-            else if (arg.token == TokenType::NAMED)
-                argument.setName(arg.tokenData);
-            else if (arg.token == TokenType::COMMA) {
-                func.pushArgument(argument);
-                argument = Variable();
-            }
-        }
-        if (argument.getType() != VariableType::NONE) {
-            func.pushArgument(argument);
-            argument = Variable();
-        }
-
-        for (int iter = 0; auto &init: i.getInitializer()) {
-            if (!i.isFunctionType()) {
-                Value val;
-
-                if (init.token == TokenType::INTEGER) val = Value(std::stoi(init.tokenData));
-                else if (init.token == TokenType::STRING) val = Value(init.tokenData);
-
-                var.push(val);
-            } else {
-
-            }
-            iter++;
-        }
-
-        if (namedDefinition && !i.isFunctionType()) {
-            output << var.generateOutput();
-            variables.push_back(var);
-        } else if (namedDefinition && i.isFunctionType()) {
-            output << func.generateOutput();
-            functions.push_back(func);
-        }
-    }
-
-*/
-
     std::cout << "-- NEW SCOPE --\n";
     for (auto& var : program.variables) {
         std::cout << "\t" << getVariableTypeAsString(var.getType()) << " " << var.getName() << "\n";
@@ -151,6 +58,13 @@ int main(int argc, const char** argv) {
     for (auto& func : program.functions) {
         std::cout << "\t" << "[.FUNCTION.] -> " << getVariableTypeAsString(func.getType()) << " " << func.getName() << "\n";
         output << func.generateOutput();
+    }
+    for (auto& op : program.operations) {
+        std::cout << "\t" << "[.OPERATION.] -> " << op.getName();
+        for (auto& tok : op.getInitializer()) {
+            std::cout << tok.tokenData << " ";
+        }
+        std::cout << '\n';
     }
     std::cout << "-- END SCOPE --\n";
 
