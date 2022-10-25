@@ -30,9 +30,14 @@ int main(int argc, const char** argv) {
             languageFolder = ((std::filesystem::path(value).is_absolute()) ? std::filesystem::path(value) : std::filesystem::absolute(std::filesystem::path(value))).string();
 */
 
+/*
     CompilerDirectory directory(languageFolder);
-
     CompilerOptions compilerOptions(directory);
+*/
+    
+
+
+    CompilerOptions compilerOptions;
 
 
 
@@ -44,10 +49,21 @@ int main(int argc, const char** argv) {
     Parser Parser(R"(D:\Languages\CLL\Language\default.lang)");
     Tokenizer Tokenizer(Parser);
 
+    std::vector<BaseDataHandler> baseData;
     auto tokenGroups = GetTokenGroups(Tokenizer);
-    for (auto& i : tokenGroups) i.printGroup();
+    for (auto& i : tokenGroups) {
+        baseData.emplace_back(i);
+        //i.printGroup();
+    }
+    for (auto& i : baseData) {
+        i.print();
+    }
 
 
+
+
+
+/*
     auto program = DetermineScope(compilerOptions, tokenGroups);
 
     std::cout << "-- NEW SCOPE --\n";
@@ -65,9 +81,10 @@ int main(int argc, const char** argv) {
             std::cout << tok.tokenData << " ";
         }
         std::cout << '\n';
+        output << op.generateOutput();
     }
     std::cout << "-- END SCOPE --\n";
-
+*/
 
     return 0;
 }

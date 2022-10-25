@@ -15,8 +15,12 @@
 std::vector<Duople<std::string, std::string>> getCmdLineArguments(size_t argc, const char** argv, size_t indexOffset = 1, char prefix = '-');
 std::vector<Duople<std::string, std::string>> getFileArguments(std::filesystem::path path);
 
+// TODO: Work On File/Directory System
+// TODO: Work On Code Modules
 
 struct CompilerCodeModule {
+    std::string moduleName;
+    std::filesystem::path path;
     std::vector<std::string> wordBuffer;
 };
 
@@ -26,6 +30,7 @@ struct CompilerDirectory {
 
     std::filesystem::path baseDirectory;
     std::filesystem::path configFile;
+    std::vector<CompilerCodeModule> modules;
 };
 
 struct CompilerOptions {

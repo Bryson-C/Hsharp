@@ -119,6 +119,8 @@ CompilerOptions::CompilerOptions(CompilerDirectory& directory) {
     linkDirectory(directory);
 }
 
+/*
+
 CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
     path = std::filesystem::absolute(path);
     if (path.empty())
@@ -137,4 +139,22 @@ CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
 
     baseDirectory = confFile.two.parent_path();
     configFile = confFile.two;
+}
+
+*/
+
+CompilerDirectory::CompilerDirectory(std::filesystem::path path) {
+    if (!path.is_absolute())
+        path = absolute(path);
+    if (path.empty() || !exists(path))
+        std::cerr << "Could Not Open Directory: '" << path.string() << "'\n";
+    for (auto& file : std::filesystem::directory_iterator(path)) {
+        std::cout << "[" << path << "]  " << file.path().string() << "\n";
+        if (file.path().filename() == "config.txt") {
+            configFile = file.path();
+        }
+    }
+
+    if (configFile.empty())
+        configFile = std::filesystem::current_path();
 }

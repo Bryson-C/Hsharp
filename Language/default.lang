@@ -2,6 +2,7 @@
 
 Let values = ["Hello", "World"];
 Let values2 = ["1", "2"];
+Let str = "string";
 Let ages = [10,20];
 Let time = 10;
 

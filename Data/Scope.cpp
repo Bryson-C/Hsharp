@@ -16,16 +16,17 @@ namespace {
     }
 }
 
-
+/*
 Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& tokenGroups) {
     Scope scope;
+
     for (auto& group : tokenGroups) {
         if (group.empty()) break;
         using TokenType = Tokenizer::MainToken;
         Variable var;
         Function func;
         Operation operation;
-        bool isOperation = false;
+        bool isOperation = true;
         // This Is For Determining The Type Of Data To Process
         for (auto& defToken : group.getTokens()) {
             switch (defToken.token) {
@@ -46,12 +47,14 @@ Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& 
                     }
                 case TokenType::AUTO_TYPE:
                     {
+                        isOperation = false;
                         var.setType(VariableType::AUTO);
                         func.setType(VariableType::AUTO);
                         break;
                     }
                 case TokenType::INT_TYPE:
                     {
+                        isOperation = false;
                         VariableType integerWidth = GetCompilerOptionIntegerSize(compilerOptions);
                         var.setType(integerWidth);
                         func.setType(integerWidth);
@@ -59,6 +62,7 @@ Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& 
                     }
                 case TokenType::STRING_TYPE:
                     {
+                        isOperation = false;
                         var.setType(VariableType::STRING_TYPE);
                         func.setType(VariableType::STRING_TYPE);
                         break;
@@ -70,10 +74,6 @@ Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& 
                 }
             }
         }
-        if (var.getType() == VariableType::NONE && func.getType() == VariableType::NONE) {
-            isOperation = true;
-        }
-
         // This Is For Setting Arguments For The Data
         Variable argument;
         for (auto& argToken : group.getArguments()) {
@@ -109,30 +109,34 @@ Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& 
             func.pushArgument(argument);
             argument = Variable();
         }
-
         // This Is For Determining The Operations That Happen To The Data
-        for (int iter = 0; auto& initToken : group.getInitializer()) {
+        for (auto& initToken : group.getInitializer()) {
             if (!group.isFunctionType()) {
                 operation.push(initToken);
                 Value val;
 
                 if (initToken.token == TokenType::INTEGER) val = Value(std::stoi(initToken.tokenData));
                 else if (initToken.token == TokenType::STRING) val = Value(initToken.tokenData);
+                else {
+                    continue;
+                }
 
                 var.push(val);
             } else {
 
             }
-            iter++;
         }
-
-        if (isOperation)
+        if (isOperation) {
             scope.operations.push_back(operation);
-        else if (group.isFunctionType())
+        }
+        else if (group.isFunctionType()) {
             scope.functions.push_back(func);
-        else
+        }
+        else {
             scope.variables.push_back(var);
-
+        }
     }
+
     return scope;
 }
+*/

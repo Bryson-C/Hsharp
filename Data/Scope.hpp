@@ -13,15 +13,17 @@
 
 class Scope {
 public:
+    /*
     std::vector<Variable> variables;
     std::vector<Function> functions;
     std::vector<Operation> operations;
     std::vector<std::unique_ptr<Scope>> childScope;
+     */
 };
 
 
 
-Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& tokenGroups);
+//Scope DetermineScope(CompilerOptions& compilerOptions, std::vector<TokenGroup>& tokenGroups);
 
 
 

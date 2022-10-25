@@ -184,7 +184,6 @@ private:
     Parser::FilePosition startPos, endPos;
 public:
     void printGroup() {
-
         if (empty()) {
             std::cout << "-- EMPTY GROUP --\n" << "\tFrom " << startPos.errorString() << "\n\tTo " << endPos.errorString() << "\n-- END GROUP --\n";
         }
@@ -212,6 +211,7 @@ public:
     std::vector<Tokenizer::Token> getArguments() { return arguments; }
     friend class Tokenizer;
     friend std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);
+    friend class BaseDataHandler;
 };
 
 std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);

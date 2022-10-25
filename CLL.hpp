@@ -22,6 +22,7 @@ inline void panic(std::string error = "", int code = -1) {
 constexpr bool PANIC_ON_ERROR = true;
 
 namespace {
+    /*
     struct Any {
     private:
         static const int32_t STRING_SIZE = 128;
@@ -53,6 +54,7 @@ namespace {
 
         template<typename ...T> friend void CLL_StdErr(std::string message, T... t);
     };
+     */
 }
 
 inline void CLL_StdErr(std::string message, std::initializer_list<std::string> labels = {}, std::initializer_list<std::string> labelText = {}) {
@@ -114,8 +116,8 @@ bool isAll(T data, std::vector<T> comp) {
     return true;
 }
 
-template<typename T> T& last(std::vector<T>& vec) { return vec[vec.size()-1]; }
-template<typename T> T& first(std::vector<T>& vec) { return vec[0]; }
+template<typename T> T& last(std::vector<T>& vec) { return vec.back(); }
+template<typename T> T& first(std::vector<T>& vec) { return vec.front(); }
 template<typename T> void push(std::vector<T>& vec, std::vector<T> data) { for (auto& i : data) vec.push_back(i); }
 template<typename T> void push(std::vector<T>& vec, T data) {  vec.push_back(data); }
 
