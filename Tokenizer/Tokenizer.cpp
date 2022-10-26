@@ -56,7 +56,7 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
             }
             
             case TokenType::OPEN_BRACE:
-            case TokenType::EQUALS: { initialized = true; break; }
+            case TokenType::EQUALS: { initialized = true; group.initializingToken = current; break; }
             case TokenType::OPEN_BRACKET: {
                 if (!initialized) {
                     insideArgList = true;

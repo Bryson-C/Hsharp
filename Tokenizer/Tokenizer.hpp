@@ -178,6 +178,7 @@ class TokenGroup {
 private:
     bool isFunction = false;
     std::vector<Tokenizer::Token> tokens;
+    Tokenizer::Token initializingToken;
     std::vector<Tokenizer::Token> initializer;
     std::vector<Tokenizer::Token> arguments;
 

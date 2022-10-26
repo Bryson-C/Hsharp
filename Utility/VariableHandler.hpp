@@ -127,6 +127,33 @@ namespace {
             _data.push_back(value);
         }
 
+        void print(bool printAll = true, size_t index = 0) {
+            int valuesPrinted = 0;
+            for (size_t i = index; i < _data.size(); i++) {
+                if (!printAll && valuesPrinted > 0) return;
+                switch (_data[i].type) {
+                    case VariableType::INT32_TYPE:
+                        std::cout << std::to_string(_data[index]._data.integer);
+                        valuesPrinted++;
+                        break;
+                    case VariableType::UINT32_TYPE:
+                        std::cout << std::to_string(_data[index]._data.uinteger);
+                        valuesPrinted++;
+                        break;
+                    case VariableType::STRING_TYPE:
+                        std::cout << _data[index]._data.string;
+                        valuesPrinted++;
+                        break;
+                    default: break;
+                }
+            }
+        }
+        void println(bool printAll = true, size_t index = 0) {
+            print(printAll, index);
+            printf("\n");
+        }
+
+
         bool empty() { return _data.empty(); }
 
         size_t size() { return _data.size(); }
@@ -134,8 +161,11 @@ namespace {
         friend class Variable;
 
         friend class Function;
+
+
     };
 }
+
 
 // TODO: For Code-Gen Ignore Commas Separating Values, This Is Just A Byproduct Of Bad Planning
 
@@ -161,13 +191,29 @@ private:
 
     std::string _name;
     VariableType _type;
+    Tokenizer::Token _initializerToken;
     bool typeInitialized = false;
     Value<VariableType::AUTO> _values;
     std::vector<Triple<VariableType, std::string, Value<VariableType::AUTO>>> _arguments;
+
+    class OperationHandler {
+    private:
+        friend class BaseDataHandler;
+        enum class OperationActionType {
+            Set,
+        } _action;
+    public:
+        OperationHandler() = default;
+        OperationHandler(BaseDataHandler baseDataHandler) {}
+    };
+
+
+
 public:
     BaseDataHandler() = default;
     explicit BaseDataHandler(const char* name, VariableType type = VariableType::AUTO) : _name(name), _type(type), _dataType(DataHandlerType::UNKNOWN) {}
     explicit BaseDataHandler(TokenGroup& group) {
+        _initializerToken = group.initializingToken;
         for (const auto& i : group.tokens) {
             switch (i.token) {
                 case Tokenizer::MainToken::AUTO_TYPE:       _type = VariableType::AUTO; typeInitialized = true; break;
@@ -177,8 +223,6 @@ public:
                 default: break;
             }
         }
-        if (_type == VariableType::AUTO)
-            printf("Initialized '%s' As Type: Auto\n", _name.c_str());
         for (Triple<VariableType, std::string, Value<VariableType::AUTO>> argument; const auto& i : group.arguments) {
             switch (i.token) {
                 case Tokenizer::MainToken::AUTO_TYPE:       argument.one = VariableType::AUTO; break;
@@ -217,16 +261,14 @@ public:
         else _dataType = DataHandlerType::VARIABLE;
     }
     void print() {
-        std::cout << "-- NEW DATA HANDLER " << " [." << dataHandlerTypeToString(_dataType) << ".] " << "--\n";
-        std::cout << getVariableTypeAsString(_type) << " " << _name << "\n";
+
+        std::cout << " [." << dataHandlerTypeToString(_dataType) << ".] "
+                    << ((_dataType != DataHandlerType::OPERATION) ? getVariableTypeAsString(_type) : "") << " " << _name << "\n";
         for (int i = 0; i < _values.size(); i++) {
             std::cout << "\t -- " << getVariableTypeAsString(_values[i].one) << " ";
-            if (isIntegerType(_values.getType(i)))
-                std::cout << _values[i].two.integer << "\n";
-            else if (_values.getType(i) == VariableType::STRING_TYPE)
-                std::cout << _values[i].two.string << "\n";
+            _values.println(false, i);
         }
-        std::cout << "-- END DATA HANDLER --\n\n";
+        std::cout << "\n";
     }
 };
 
