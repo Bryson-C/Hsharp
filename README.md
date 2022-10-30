@@ -9,7 +9,8 @@
   
 - Make Code Easier To Read
 - Document More Code
-- Finish New Parser Then Delete FileReader Directory
+- Finish File Directory System
+- Finish Complier Command Line Arguments
 - Code Generation
 - Compile Time Checks
 
