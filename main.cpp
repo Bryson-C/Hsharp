@@ -7,14 +7,15 @@
 #include "Parser/Parser.hpp"
 #include "Tokenizer/Tokenizer.hpp"
 #include "CLL.hpp"
-#include "Utility/Enviornment.hpp"
-#include "Utility/VariableHandler.hpp"
+#include "Utility/Environment.hpp"
+#include "Utility/BaseHandlers.hpp"
 #include "Data/Scope.hpp"
 
 
 
-#define DEBUG
+#define DEBUG 1
 
+// TODO: Add Constant-Correctness To Project
 int main(int argc, const char** argv) {
 
 
@@ -49,15 +50,20 @@ int main(int argc, const char** argv) {
     Parser Parser(R"(D:\Languages\CLL\Language\default.lang)");
     Tokenizer Tokenizer(Parser);
 
-    std::vector<BaseDataHandler> baseData;
     auto tokenGroups = GetTokenGroups(Tokenizer);
-    for (auto& i : tokenGroups) {
-        baseData.emplace_back(i);
-        //i.printGroup();
+    std::vector<BaseDataHandler> baseData(tokenGroups.size());
+    for (int i = 0; i < tokenGroups.size(); i++) {
+        baseData[i] = BaseDataHandler(tokenGroups[i]);
+        if (auto handlerType = baseData[i].getHandledDataType(); handlerType == BaseDataHandler::DataHandlerType::OPERATION) {
+            OperationHandler operation(baseData[i]);
+        } else if (handlerType == BaseDataHandler::DataHandlerType::FUNCTION) {
+            FunctionHandler function(baseData[i]);
+        } else if (handlerType == BaseDataHandler::DataHandlerType::VARIABLE) {
+            VariableHandler variable(baseData[i]);
+        }
+        baseData[i].print();
     }
-    for (auto& i : baseData) {
-        i.print();
-    }
+
 
 
 

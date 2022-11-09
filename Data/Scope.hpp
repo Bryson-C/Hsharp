@@ -7,8 +7,8 @@
 
 #include "../CLL.hpp"
 #include "../Tokenizer/Tokenizer.hpp"
-#include "../Utility/VariableHandler.hpp"
-#include "../Utility/Enviornment.hpp"
+#include "../Utility/Handlers/BaseDataHandler.hpp"
+#include "../Utility/Environment.hpp"
 
 
 class Scope {
