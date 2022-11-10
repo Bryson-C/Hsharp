@@ -29,14 +29,14 @@ Tokenizer::Tokenizer(Parser parser) {
 std::vector<Tokenizer::Token> Tokenizer::getTokens() { return m_Tokens; };
 
 
-std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
-    auto tokenList = tokenizer.getTokens();
+std::vector<TokenGroup> GetTokenGroups(std::vector<Tokenizer::Token> tokens, bool gatherAll, int& offset) {
+    auto tokenList = tokens;
 
     std::vector<TokenGroup> statements;
     TokenGroup group;
     bool initialized = false, insideArgList = false;
 
-    for (int i = 0; i < tokenList.size(); i++) {
+    for (int i = offset; i < tokenList.size(); i++, offset++) {
         auto current = tokenList[i];
         auto currentToken = tokenList[i].token;
         using TokenType = Tokenizer::MainToken;
@@ -52,7 +52,10 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
                 group = TokenGroup();
                 group.startPos = current.filePosition;
                 initialized = insideArgList = false;
-                break;
+                if (gatherAll)
+                    break;
+                else
+                    return {group};
             }
             
             case TokenType::OPEN_BRACE:
@@ -87,4 +90,7 @@ std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
 
     return statements;
 }
-
+std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer) {
+    int offset = 0;
+    return GetTokenGroups(tokenizer.getTokens(), true, offset);
+}

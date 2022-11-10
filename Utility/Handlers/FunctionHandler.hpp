@@ -6,11 +6,19 @@
 #define CLL_FUNCTIONHANDLER_HPP
 
 #include "BaseDataHandler.hpp"
+#include "OperationHandler.hpp"
+#include "VariableHandler.hpp"
 
-class FunctionHandler {
+class FunctionHandler : public BaseDataHandler {
 private:
+    std::string _name;
+    VariableType _type;
+    using FunctionArgument = Triple<VariableType, std::string, ValueArray<VariableType::AUTO>>;
+    std::vector<FunctionArgument> _args;
+    std::vector<BaseDataHandler> _body;
 public:
-    FunctionHandler(BaseDataHandler& handler) {}
+    explicit FunctionHandler(const BaseDataHandler& handler);
+    void print() const override;
 };
 
 

@@ -79,30 +79,30 @@ namespace {
         }
 
 
-        template<VariableType> friend class Value;
+        template<VariableType> friend class ValueArray;
 
     };
 
 
     // TODO: Finish Any Value Re-work
     template<VariableType DefaultDataType = VariableType::AUTO>
-    class Value {
+    class ValueArray {
     private:
         std::vector<Any> _data{};
     public:
-        Value() = default;
+        ValueArray() = default;
 
-        explicit Value(int32_t number, VariableType overrideType = DefaultDataType) {
+        explicit ValueArray(int32_t number, VariableType overrideType = DefaultDataType) {
             _data.emplace_back(number,
                                (DefaultDataType == VariableType::AUTO) ? VariableType::INT32_TYPE : overrideType);
         }
 
-        explicit Value(int64_t number, VariableType overrideType = DefaultDataType) {
+        explicit ValueArray(int64_t number, VariableType overrideType = DefaultDataType) {
             _data.emplace_back(number,
                                (DefaultDataType == VariableType::AUTO) ? VariableType::INT64_TYPE : overrideType);
         }
 
-        explicit Value(std::string string, VariableType overrideType = DefaultDataType) {
+        explicit ValueArray(std::string string, VariableType overrideType = DefaultDataType) {
             if (DefaultDataType != VariableType::AUTO && DefaultDataType != VariableType::STRING_TYPE)
                 std::cerr << "Cannot Push Data Type Of: " << (int) overrideType << " To String Variable\n";
             _data.emplace_back(string, VariableType::STRING_TYPE);
@@ -160,10 +160,6 @@ namespace {
 
         size_t size() const { return _data.size(); }
 
-        friend class Variable;
-
-        friend class Function;
-
     };
 
 
@@ -184,6 +180,8 @@ public:
 
 private:
     friend class OperationHandler;
+    friend class FunctionHandler;
+    friend class VariableHandler;
 
     static std::string dataHandlerTypeToString(DataHandlerType type);
     DataHandlerType _dataType;
@@ -193,10 +191,10 @@ private:
     VariableType _type;
     Tokenizer::Token _initializerToken;
     bool typeInitialized = false;
-    Value<VariableType::AUTO> _values;
+    ValueArray<VariableType::AUTO> _values;
     std::vector<Tokenizer::Token> _operations;
-    std::vector<Triple<VariableType, std::string, Value<VariableType::AUTO>>> _arguments;
-
+    std::vector<Triple<VariableType, std::string, ValueArray<VariableType::AUTO>>> _arguments;
+    std::vector<BaseDataHandler> _functionBody;
 
 
 public:

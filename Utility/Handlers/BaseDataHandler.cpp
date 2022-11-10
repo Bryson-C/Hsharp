@@ -63,13 +63,13 @@ BaseDataHandler::BaseDataHandler(TokenGroup &group) {
         }
     }
 
-    for (Triple<VariableType, std::string, Value<VariableType::AUTO>> argument; const auto& i : group.arguments) {
+    for (Triple<VariableType, std::string, ValueArray<VariableType::AUTO>> argument; const auto& i : group.arguments) {
         switch (i.token) {
             case Tokenizer::MainToken::AUTO_TYPE:       argument.one = VariableType::AUTO; break;
             case Tokenizer::MainToken::INT_TYPE:        argument.one = VariableType::INT32_TYPE; break;
             case Tokenizer::MainToken::STRING_TYPE:     argument.one = VariableType::STRING_TYPE; break;
             case Tokenizer::MainToken::NAMED:           argument.two = i.tokenData; break;
-            case Tokenizer::MainToken::COMMA:           _arguments.push_back(argument); argument = Triple<VariableType, std::string, Value<VariableType::AUTO>>(); break;
+            case Tokenizer::MainToken::COMMA:           _arguments.push_back(argument); argument = Triple<VariableType, std::string, ValueArray<VariableType::AUTO>>(); break;
             default: break;
         }
     }
@@ -77,6 +77,24 @@ BaseDataHandler::BaseDataHandler(TokenGroup &group) {
     if (!typeInitialized) _dataType = DataHandlerType::OPERATION;
     else if (group.isFunction) _dataType = DataHandlerType::FUNCTION;
     else _dataType = DataHandlerType::VARIABLE;
+
+    if (_dataType == DataHandlerType::OPERATION) {
+        _operations = group.initializer;
+        return;
+    } else if (_dataType == DataHandlerType::FUNCTION) {
+        for (int tokenGroupOffset = 0; tokenGroupOffset < group.initializer.size(); tokenGroupOffset++) {
+            std::vector<TokenGroup> nextGroup = GetTokenGroups(group.initializer, false, tokenGroupOffset);
+            if (nextGroup.size() > 1) {
+                std::cerr << "GROUP SIZE UNEXPECTED ERROR! (This Is Completely My Fault)\n";
+                assert(1);
+            }
+            _functionBody.emplace_back(BaseDataHandler(nextGroup[0]));
+        }
+
+
+    }
+
+
 
     for (const auto& initializerToken : group.initializer) {
         switch (initializerToken.token) {
@@ -89,9 +107,6 @@ BaseDataHandler::BaseDataHandler(TokenGroup &group) {
                 _values.push(initializerToken.tokenData);
                 break;
             default:
-                if (_dataType == DataHandlerType::OPERATION) {
-                    _operations.push_back(initializerToken);
-                }
                 break;
         }
 

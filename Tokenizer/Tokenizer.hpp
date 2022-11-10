@@ -77,20 +77,20 @@ public:
             case MainToken::OPEN_BRACKET: return "[";
             case MainToken::CLOSE_BRACKET: return "]";
             case MainToken::SEMICOLON: return ";";
-            case MainToken::EQUALS: return "=";
-            case MainToken::COMMA: return ",";
+            case MainToken::EQUALS: return "Equals";
+            case MainToken::COMMA: return "Comma";
             case MainToken::BIG_ARROW: return "=>";
             case MainToken::SMALL_ARROW: return "->";
             case MainToken::RETURN: return "Return";
-            case MainToken::OP_ADDITION: return "+";
-            case MainToken::OP_SUBTRACTION: return "-";
-            case MainToken::OP_DIVISION: return "/";
-            case MainToken::OP_MULTIPLICATION: return "*";
-            case MainToken::OP_MODULUS: return "%";
-            case MainToken::OP_EXPONENTIAL: return "**";
-            case MainToken::OP_RANGE: return "..";
-            case MainToken::OP_CONCAT: return "&";
-            case MainToken::OP_OTHER: return "|";
+            case MainToken::OP_ADDITION: return "Addition | +";
+            case MainToken::OP_SUBTRACTION: return "Subtraction | -";
+            case MainToken::OP_DIVISION: return "Division | /";
+            case MainToken::OP_MULTIPLICATION: return "Multiplication | *";
+            case MainToken::OP_MODULUS: return "Modulus | %";
+            case MainToken::OP_EXPONENTIAL: return "Exponential | **";
+            case MainToken::OP_RANGE: return "Range | ..";
+            case MainToken::OP_CONCAT: return "Concat | &";
+            case MainToken::OP_OTHER: return "Other | `|`";
         }
     }
 
@@ -210,11 +210,18 @@ public:
     std::vector<Tokenizer::Token> getTokens() { return tokens; }
     std::vector<Tokenizer::Token> getInitializer() { return initializer; }
     std::vector<Tokenizer::Token> getArguments() { return arguments; }
+
     friend class Tokenizer;
+
+    friend std::vector<TokenGroup> GetTokenGroups(std::vector<Tokenizer::Token> tokens, bool gatherAll, int& offset);
     friend std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);
+
     friend class BaseDataHandler;
 };
 
+// If `gatherAll` Is True The Function Will Act Normally, Otherwise It Will Only Gather Tokens Until Next Endline/Semicolon
+// If `gatherAll` Is False Offset Will Be Required To Figure Out Where To Go To Next
+std::vector<TokenGroup> GetTokenGroups(std::vector<Tokenizer::Token> tokens, bool gatherAll, int& offset);
 std::vector<TokenGroup> GetTokenGroups(Tokenizer tokenizer);
 
 

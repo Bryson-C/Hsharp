@@ -8,10 +8,15 @@
 #include "BaseDataHandler.hpp"
 
 
-class VariableHandler {
+class VariableHandler : public BaseDataHandler {
 private:
+    std::string _name;
+    VariableType _type;
+    Tokenizer::Token _initializerToken;
+    ValueArray<VariableType::AUTO> _values;
 public:
-    VariableHandler(BaseDataHandler& handler) {}
+    explicit VariableHandler(const BaseDataHandler& handler);
+    void print() const override;
 };
 
 

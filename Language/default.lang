@@ -6,9 +6,11 @@ Let str = "string";
 Let ages = [10,20];
 Let time = 10;
 
-time = 5;
+time = 5 + 10;
 
-
-Int add[Int one, Int two] { one + two; }
-Int giveZero[] { 0; }
+Int add[Int one, Int two] {
+    one + two;
+}
+Int giveZero[] { return 0; }
+Int other[] { Let x = 10; }
 
